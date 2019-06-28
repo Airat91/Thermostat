@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.6)
-set(PRJ_NAME semistor)
+set(PRJ_NAME thermostat)
 include(STM32Toolchain.cmake)
 
 set(MCU_FAMILY STM32F1xx)
@@ -29,7 +29,7 @@ file(GLOB FREERTOS_HEADERS  freertos/inc/*.h)
 file(GLOB FREERTOS_HEADERS  ${FREERTOS_HEADERS} freertos/inc/portable/*.h)
 file(GLOB FREERTOS_HEADERS  ${FREERTOS_HEADERS} freertos/cmsis_os/*.h)
 #freertos source and headers files END
-#check stm_hal
+#2.check stm_hal
 file(GLOB HAL_SOURCES Drivers/${MCU_FAMILY}_HAL_DRIVER/Src/*.c)
 file(GLOB STM32F2_SYSTEM Drivers/CMSIS/Device/ST/${MCU_FAMILY}/Source/Templates/system_${MCU_FAMILY}.c)
 file(GLOB STM32F2_STARTUP Drivers/CMSIS/Device/ST/${MCU_FAMILY}/Source/Templates/gcc/startup_stm32f103x6.s)
@@ -46,6 +46,7 @@ file(GLOB USER_SOURCES src/*.c)
 file(GLOB USB_CORE Middlewares/ST/STM32_USB_Device_Library/Core/Src/*.c)
 file(GLOB USB_CLASS_CDC Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/*.c)
 file(GLOB LINKER_FILE ${MCU_LINKER_SCRIPT})
+file(GLOB SELF_HEADERS PUBLIC inc/*.h)
 
 set(SOURCE_FILES  ${USB_CORE} ${USB_CLASS_CDC} ${USER_SOURCES})
 
@@ -54,7 +55,7 @@ set(BUILD_TARGET ${PROJECT_NAME}.elf)
 
 add_library(freertos_lib ${FREERTOS_SOURCES} ${FREERTOS_HEADERS} )
 add_library(stm32f2_hal_lib ${HAL_SOURCES} ${STM32F2_STARTUP} ${STM32F2_SYSTEM} ${STM32_HEADERS} ${STM32_LEGACY_HEADERS} )
-add_executable(${PROJECT_NAME}.elf ${SOURCE_FILES} ${LINKER_FILE} ${FREERTOS_HEADERS} ${STM32_HEADERS} ${STM32_LEGACY_HEADERS})
+add_executable(${PROJECT_NAME}.elf ${SOURCE_FILES} ${LINKER_FILE} ${FREERTOS_HEADERS} ${STM32_HEADERS} ${STM32_LEGACY_HEADERS} ${SELF_HEADERS})
 target_link_libraries(${PROJECT_NAME}.elf freertos_lib stm32f2_hal_lib)
 
 #freertos_lib use only self headers

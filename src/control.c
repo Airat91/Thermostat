@@ -48,6 +48,7 @@
 #include "ssd1306.h"
 #include "time_table.h"
 #include "stm32f1xx_ll_gpio.h"
+#include "dcts.h"
 extern IWDG_HandleTypeDef hiwdg;
 /* fb pid */
 typedef union DataTypes_union{
@@ -97,6 +98,7 @@ void pid(pid_in_t * inputs,pid_var_t * vars,\
 #define DEFAULT_OUT 0.0f
 #define REQUIRE_VALUE 27.0f
 extern RTC_HandleTypeDef hrtc;
+extern ADC_HandleTypeDef hadc1;
 void control_task( const void *parameters){
     u32 tick=0;
     pid_in_t in;
@@ -121,6 +123,19 @@ void control_task( const void *parameters){
         sensor_data_valid = 0;
         /*get temp start */
         /*get temp end */
+        u32 value[2];
+        u8 measerment_number = sizeof(meas)/sizeof(meas_t);
+        value[0] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
+        value[1] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2);
+        for (u8 i =0;i<measerment_number;i++){
+            if (memcmp(meas[i].name,"ADC0",sizeof("ADC0"))){
+                dcts_write_meas_value (i, (value[0]/4096)*2.5f);
+            }else if(memcmp(meas[3].name,"ADC1",sizeof("ADC0"))){
+                dcts_write_meas_value (i, (value[0]/4096)*2.5f);
+            }
+        }
+
+
         pid(&in,&var,&out);
         osDelay(1000);
         HAL_IWDG_Refresh(&hiwdg);

@@ -43,6 +43,7 @@
 #include "main.h"
 #include "display.h"
 #include "cmsis_os.h"
+#include "dcts.h"
 //#include "usbd_cdc_if.h"
 #include "ssd1306.h"
 #include "stm32f1xx_ll_gpio.h"
@@ -57,6 +58,7 @@ void display_task( const void *parameters){
     HAL_IWDG_Refresh(&hiwdg);
     //SSD1306_DrawCircle(10, 33, 7, SSD1306_COLOR_WHITE,0.5);
     SSD1306_UpdateScreen();
+    u8 measerment_number = sizeof(meas)/sizeof(meas_t);
     taskEXIT_CRITICAL();
     while(1){
         char buff[32];
@@ -72,6 +74,22 @@ void display_task( const void *parameters){
                 SSD1306_Init();
             }
         }
+        for (u8 i =0;i<measerment_number;i++){
+            if (memcmp(meas[i].name,"ADC0",sizeof("ADC0"))){
+                sprintf(buff,"ADC0 %f",meas[i].value);
+                SSD1306_GotoXY(0, 10); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
+                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE); //пишем надпись в выставленной позиции шрифтом "Font_7x10" белым цветом.
+                SSD1306_UpdateScreen();
+
+            }else if(memcmp(meas[3].name,"ADC1",sizeof("ADC0"))){
+                sprintf(buff,"ADC1 %f",meas[i].value);
+                SSD1306_GotoXY(0, 20); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
+                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE); //пишем надпись в выставленной позиции шрифтом "Font_7x10" белым цветом.
+                SSD1306_UpdateScreen();
+
+            }
+        }
+
         display_time();
         osDelay(1000);
         HAL_IWDG_Refresh(&hiwdg);

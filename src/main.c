@@ -56,6 +56,7 @@
 #include "display.h"
 #include "stm32f1xx_ll_gpio.h"
 #include "step.h"
+#include "dcts.h"
 //#include "usbd_cdc_if.h"
 
 #define FEEDER 0
@@ -97,18 +98,22 @@ int main(void){
     MX_GPIO_Init();
     MX_IWDG_Init();
     MX_RTC_Init();
-    //MX_ADC1_Init();
+    MX_ADC1_Init();
     MX_USART1_UART_Init();
     MX_TIM3_Init();
     MX_TIM2_Init();
+    dcts_init();
+    HAL_ADC_Start(&hadc1);
+    HAL_ADCEx_InjectedStart(&hadc1);
     osThreadDef(own_task, default_task, osPriorityNormal, 0, 364);
     defaultTaskHandle = osThreadCreate(osThread(own_task), NULL);
 #if FEEDER
     osThreadDef(step_task, step_task, osPriorityNormal, 0, 364);
     defaultTaskHandle = osThreadCreate(osThread(step_task), NULL);
 #else
-    osThreadDef(ds18_task, ds18_task, osPriorityHigh, 0, 364);
+    /*osThreadDef(ds18_task, ds18_task, osPriorityHigh, 0, 364);
     defaultTaskHandle = osThreadCreate(osThread(ds18_task), NULL);
+*/
 
     osThreadDef(control_task, control_task, osPriorityNormal, 0, 364);
     defaultTaskHandle = osThreadCreate(osThread(control_task), NULL);
@@ -194,24 +199,50 @@ void SystemClock_Config(void)
 static void MX_ADC1_Init(void)
 {
 
-    ADC_ChannelConfTypeDef sConfig;
-    ADC_InjectionConfTypeDef sConfigInjected;
+    /* USER CODE BEGIN ADC1_Init 0 */
 
+    /* USER CODE END ADC1_Init 0 */
+    ADC_InjectionConfTypeDef sConfigInjected = {0};
+    ADC_ChannelConfTypeDef sConfig = {0};
+
+    /* USER CODE BEGIN ADC1_Init 1 */
+
+    /* USER CODE END ADC1_Init 1 */
     /**Common config
     */
     hadc1.Instance = ADC1;
     hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
-    hadc1.Init.ContinuousConvMode = DISABLE;
-    hadc1.Init.DiscontinuousConvMode = ENABLE;
-    hadc1.Init.NbrOfDiscConversion = 1;
+    hadc1.Init.ContinuousConvMode = ENABLE;
+    hadc1.Init.DiscontinuousConvMode = DISABLE;
     hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
     hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-    hadc1.Init.NbrOfConversion = 1;
+    hadc1.Init.NbrOfConversion = 2;
     if (HAL_ADC_Init(&hadc1) != HAL_OK)
     {
-        _Error_Handler(__FILE__, __LINE__);
+      Error_Handler();
     }
-
+    /**Configure Injected Channel
+    */
+    sConfigInjected.InjectedChannel = ADC_CHANNEL_0;
+    sConfigInjected.InjectedRank = ADC_INJECTED_RANK_1;
+    sConfigInjected.InjectedNbrOfConversion = 2;
+    sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_239CYCLES_5;
+    sConfigInjected.ExternalTrigInjecConv = ADC_INJECTED_SOFTWARE_START;
+    sConfigInjected.AutoInjectedConv = ENABLE;
+    sConfigInjected.InjectedDiscontinuousConvMode = DISABLE;
+    sConfigInjected.InjectedOffset = 0;
+    if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
+    {
+      Error_Handler();
+    }
+    /**Configure Injected Channel
+    */
+    sConfigInjected.InjectedChannel = ADC_CHANNEL_1;
+    sConfigInjected.InjectedRank = ADC_INJECTED_RANK_2;
+    if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
+    {
+      Error_Handler();
+    }
     /**Configure Regular Channel
     */
     sConfig.Channel = ADC_CHANNEL_0;
@@ -219,47 +250,20 @@ static void MX_ADC1_Init(void)
     sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
     {
-        _Error_Handler(__FILE__, __LINE__);
+      Error_Handler();
+    }
+    /**Configure Regular Channel
+    */
+    sConfig.Channel = ADC_CHANNEL_1;
+    sConfig.Rank = ADC_REGULAR_RANK_2;
+    if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+    {
+      Error_Handler();
     }
 
-    /**Configure Injected Channel
-    */
-    sConfigInjected.InjectedChannel = ADC_CHANNEL_0;
-    sConfigInjected.InjectedRank = ADC_INJECTED_RANK_1;
-    sConfigInjected.InjectedNbrOfConversion = 4;
-    sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_239CYCLES_5;
-    sConfigInjected.ExternalTrigInjecConv = ADC_INJECTED_SOFTWARE_START;
-    sConfigInjected.AutoInjectedConv = DISABLE;
-    sConfigInjected.InjectedDiscontinuousConvMode = ENABLE;
-    sConfigInjected.InjectedOffset = 0;
-    if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
-    }
+    /* USER CODE BEGIN ADC1_Init 2 */
 
-    /**Configure Injected Channel
-    */
-    sConfigInjected.InjectedRank = ADC_INJECTED_RANK_2;
-    if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-
-    /**Configure Injected Channel
-    */
-    sConfigInjected.InjectedRank = ADC_INJECTED_RANK_3;
-    if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-
-    /**Configure Injected Channel
-    */
-    sConfigInjected.InjectedRank = ADC_INJECTED_RANK_4;
-    if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
-    }
+    /* USER CODE END ADC1_Init 2 */
 
 }
 
