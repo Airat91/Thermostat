@@ -53,11 +53,12 @@
 //#include "usb_device.h"
 #include "ds18.h"
 #include "control.h"
+#include "display.h"
 #include "stm32f1xx_ll_gpio.h"
 #include "step.h"
 //#include "usbd_cdc_if.h"
 
-#define FEEDER 1
+#define FEEDER 0
 
 
 /* Private variables ---------------------------------------------------------*/
@@ -90,10 +91,9 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
   * @retval None
   */
 int main(void){
+
     HAL_Init();
-
     SystemClock_Config();
-
     MX_GPIO_Init();
     MX_IWDG_Init();
     MX_RTC_Init();
@@ -101,7 +101,6 @@ int main(void){
     MX_USART1_UART_Init();
     MX_TIM3_Init();
     MX_TIM2_Init();
-
     osThreadDef(own_task, default_task, osPriorityNormal, 0, 364);
     defaultTaskHandle = osThreadCreate(osThread(own_task), NULL);
 #if FEEDER
@@ -110,8 +109,13 @@ int main(void){
 #else
     osThreadDef(ds18_task, ds18_task, osPriorityHigh, 0, 364);
     defaultTaskHandle = osThreadCreate(osThread(ds18_task), NULL);
+
     osThreadDef(control_task, control_task, osPriorityNormal, 0, 364);
     defaultTaskHandle = osThreadCreate(osThread(control_task), NULL);
+
+    osThreadDef(display_task, display_task, osPriorityNormal, 0, 364);
+    defaultTaskHandle = osThreadCreate(osThread(display_task), NULL);
+
 #endif
 
     /* Start scheduler */
@@ -399,7 +403,6 @@ void default_task(void const * argument){
                 char len;
                 time = osKernelSysTick();
                 len = sprintf(temp_buff,"temp - %lu:%f",time,ds18b20[i].Temperature);
-                // CDC_Transmit_FS(temp_buff, len);
                 time = osKernelSysTick();
                 while (osKernelSysTick()>(time+10)){
 
