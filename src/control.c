@@ -128,13 +128,16 @@ void control_task( const void *parameters){
         value[0] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
         value[1] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2);
         for (u8 i =0;i<measerment_number;i++){
+            float adc;
             if (memcmp(meas[i].name,"ADC0",sizeof("ADC0"))){
-                dcts_write_meas_value (i, (value[0]/4096)*2.5f);
+                adc = ((float)value[0]/4096.0f)*3.3f;
+                dcts_write_meas_value (i, adc);
             }else if(memcmp(meas[3].name,"ADC1",sizeof("ADC0"))){
-                dcts_write_meas_value (i, (value[0]/4096)*2.5f);
+                adc = ((float)value[1]/4096.0f)*3.3f;
+                dcts_write_meas_value (i, adc);
             }
         }
-
+        //HAL_ADCEx_InjectedStart(&hadc1);
 
         pid(&in,&var,&out);
         osDelay(1000);
