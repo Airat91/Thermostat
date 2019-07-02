@@ -50,14 +50,13 @@
 #include "main.h"
 #include "stm32f1xx_hal.h"
 #include "cmsis_os.h"
-//#include "usb_device.h"
 #include "ds18.h"
 #include "control.h"
 #include "display.h"
 #include "stm32f1xx_ll_gpio.h"
 #include "step.h"
 #include "dcts.h"
-//#include "usbd_cdc_if.h"
+#include "pin_map.h"
 
 #define FEEDER 0
 
@@ -216,7 +215,7 @@ static void MX_ADC1_Init(void)
     hadc1.Init.DiscontinuousConvMode = DISABLE;
     hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
     hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-    hadc1.Init.NbrOfConversion = 2;
+    hadc1.Init.NbrOfConversion = 3;
     if (HAL_ADC_Init(&hadc1) != HAL_OK)
     {
       Error_Handler();
@@ -225,7 +224,7 @@ static void MX_ADC1_Init(void)
     */
     sConfigInjected.InjectedChannel = ADC_CHANNEL_0;
     sConfigInjected.InjectedRank = ADC_INJECTED_RANK_1;
-    sConfigInjected.InjectedNbrOfConversion = 2;
+    sConfigInjected.InjectedNbrOfConversion = 3;
     sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_239CYCLES_5;
     sConfigInjected.ExternalTrigInjecConv = ADC_INJECTED_SOFTWARE_START;
     sConfigInjected.AutoInjectedConv = ENABLE;
@@ -243,6 +242,14 @@ static void MX_ADC1_Init(void)
     {
       Error_Handler();
     }
+    /**Configure Injected Channel
+    */
+    sConfigInjected.InjectedChannel = ADC_CHANNEL_VREFINT;
+    sConfigInjected.InjectedRank = ADC_INJECTED_RANK_3;
+    if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
+    {
+      Error_Handler();
+    }
     /**Configure Regular Channel
     */
     sConfig.Channel = ADC_CHANNEL_0;
@@ -256,6 +263,14 @@ static void MX_ADC1_Init(void)
     */
     sConfig.Channel = ADC_CHANNEL_1;
     sConfig.Rank = ADC_REGULAR_RANK_2;
+    if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+    {
+      Error_Handler();
+    }
+    /**Configure Regular Channel
+    */
+    sConfig.Channel = ADC_CHANNEL_VREFINT;
+    sConfig.Rank = ADC_REGULAR_RANK_3;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
     {
       Error_Handler();
@@ -373,24 +388,55 @@ static void MX_USART1_UART_Init(void)
         * EXTI
 */
 static void MX_GPIO_Init(void){
+
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+
     /* GPIO Ports Clock Enable */
     __HAL_RCC_GPIOC_CLK_ENABLE();
-    __HAL_RCC_GPIOD_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOB_CLK_ENABLE();
-    LL_GPIO_SetPinMode(AIR_PORT, AIR_PIN, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinMode(FLOW_PORT, FLOW_PIN, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinMode(LIGTH_PORT, LIGTH_PIN, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinMode(LIGTH2_PORT, LIGTH2_PIN, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinMode(LED_PORT, LED_PIN, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinMode(STEP_PORT, STEP_OUT1_1, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinOutputType(STEP_PORT, STEP_OUT1_1,LL_GPIO_OUTPUT_PUSHPULL);
-    LL_GPIO_SetPinMode(STEP_PORT, STEP_OUT1_2, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinOutputType(STEP_PORT, STEP_OUT1_2,LL_GPIO_OUTPUT_PUSHPULL);
-    LL_GPIO_SetPinMode(STEP_PORT, STEP_OUT2_1, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinOutputType(STEP_PORT, STEP_OUT2_1,LL_GPIO_OUTPUT_PUSHPULL);
-    LL_GPIO_SetPinMode(STEP_PORT, STEP_OUT2_2, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinOutputType(STEP_PORT, STEP_OUT2_2,LL_GPIO_OUTPUT_PUSHPULL);
+    __HAL_RCC_GPIOD_CLK_ENABLE();
+
+    /* Buttons */
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+
+    GPIO_InitStruct.Pin = UP_PIN;
+    HAL_GPIO_Init(UP_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = DOWN_PIN;
+    HAL_GPIO_Init(DOWN_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = LEFT_PIN;
+    HAL_GPIO_Init(LEFT_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = RIGHT_PIN;
+    HAL_GPIO_Init(RIGHT_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = OK_PIN;
+    HAL_GPIO_Init(OK_PORT, &GPIO_InitStruct);
+
+    /* ADC inputs */
+    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+
+    GPIO_InitStruct.Pin = LOAD_TEMP_PIN;
+    HAL_GPIO_Init(LOAD_TEMP_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = REG_TEMP_PIN;
+    HAL_GPIO_Init(REG_TEMP_PORT, &GPIO_InitStruct);
+
+    /* DEBUG pins */
+
+    /* I2C display pins */
+
+    /* 50 Hz SYNC pin */
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Pin = SYNC_PIN;
+    HAL_GPIO_Init(SYNC_PORT, &GPIO_InitStruct);
+
+    /* REG_ON pin */
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Pin = REG_ON_PIN;
+    HAL_GPIO_Init(REG_ON_PORT, &GPIO_InitStruct);
 }
 
 /* StartDefaultTask function */

@@ -29,7 +29,7 @@ void dcts_init () {
     strcpy (meas[0].unit, "°C");
     meas[0].value = 0;
     
-    strcpy (meas[1].name, "T");
+    strcpy (meas[1].name, "Reg");
     strcpy (meas[1].unit, "°C");
     meas[1].value = 0;
     

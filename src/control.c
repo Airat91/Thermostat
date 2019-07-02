@@ -104,6 +104,7 @@ void control_task( const void *parameters){
     pid_in_t in;
     pid_var_t var;
     pid_out_t out;
+    float val;
     var.prev_error_integral.data.float32 = 0.0;
     var.error_integral.data.float32  = 0.0;
     var.number_tick.data.uint32=0.0;
@@ -123,15 +124,23 @@ void control_task( const void *parameters){
         sensor_data_valid = 0;
         /*get temp start */
         /*get temp end */
-        u32 value[2];
-        u8 measerment_number = sizeof(meas)/sizeof(meas_t);
+        u32 value[3];
         value[0] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
         value[1] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2);
-        for (u8 i =0;i<measerment_number;i++){
-            if (memcmp(meas[i].name,"ADC0",sizeof("ADC0"))){
-                dcts_write_meas_value (i, (value[0]/4096)*2.5f);
-            }else if(memcmp(meas[3].name,"ADC1",sizeof("ADC0"))){
-                dcts_write_meas_value (i, (value[0]/4096)*2.5f);
+        value[2] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_3);
+        for (u8 i =0;i<MEAS_NUM;i++){
+            if (!memcmp(meas[i].name,"Floor",sizeof("Floor"))){
+                val = -0.0284f*meas[3].value+61.94f;
+                dcts_write_meas_value (i, val);
+            }else if (!memcmp(meas[i].name,"Reg",sizeof("Reg"))){
+                val = meas[4].value/0.01f;
+                dcts_write_meas_value (i, val);
+            }else if (!memcmp(meas[i].name,"ADC0",sizeof("ADC0"))){
+                val = ((float)value[0]/value[2])*1.2f;
+                dcts_write_meas_value (i, val);
+            }else if(!memcmp(meas[i].name,"ADC1",sizeof("ADC0"))){
+                val = ((float)value[1]/value[2])*1.2f;
+                dcts_write_meas_value (i, val);
             }
         }
 
