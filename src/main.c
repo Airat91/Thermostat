@@ -197,12 +197,11 @@ void SystemClock_Config(void)
 /* ADC1 init function */
 static void MX_ADC1_Init(void)
 {
-
     /* USER CODE BEGIN ADC1_Init 0 */
 
     /* USER CODE END ADC1_Init 0 */
+
     ADC_InjectionConfTypeDef sConfigInjected = {0};
-    ADC_ChannelConfTypeDef sConfig = {0};
 
     /* USER CODE BEGIN ADC1_Init 1 */
 
@@ -225,7 +224,7 @@ static void MX_ADC1_Init(void)
     sConfigInjected.InjectedChannel = ADC_CHANNEL_0;
     sConfigInjected.InjectedRank = ADC_INJECTED_RANK_1;
     sConfigInjected.InjectedNbrOfConversion = 3;
-    sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_239CYCLES_5;
+    sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_1CYCLE_5;
     sConfigInjected.ExternalTrigInjecConv = ADC_INJECTED_SOFTWARE_START;
     sConfigInjected.AutoInjectedConv = ENABLE;
     sConfigInjected.InjectedDiscontinuousConvMode = DISABLE;

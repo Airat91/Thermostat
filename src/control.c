@@ -143,7 +143,7 @@ void control_task( const void *parameters){
                 dcts_write_meas_value (i, val);
             }
         }
-
+        //HAL_ADCEx_InjectedStart(&hadc1);
 
         pid(&in,&var,&out);
         osDelay(1000);
