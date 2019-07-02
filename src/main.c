@@ -202,6 +202,7 @@ static void MX_ADC1_Init(void)
     /* USER CODE END ADC1_Init 0 */
 
     ADC_InjectionConfTypeDef sConfigInjected = {0};
+    ADC_ChannelConfTypeDef sConfig = {0};
 
     /* USER CODE BEGIN ADC1_Init 1 */
 
@@ -224,7 +225,7 @@ static void MX_ADC1_Init(void)
     sConfigInjected.InjectedChannel = ADC_CHANNEL_0;
     sConfigInjected.InjectedRank = ADC_INJECTED_RANK_1;
     sConfigInjected.InjectedNbrOfConversion = 3;
-    sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+    sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_239CYCLES_5;
     sConfigInjected.ExternalTrigInjecConv = ADC_INJECTED_SOFTWARE_START;
     sConfigInjected.AutoInjectedConv = ENABLE;
     sConfigInjected.InjectedDiscontinuousConvMode = DISABLE;
@@ -251,6 +252,7 @@ static void MX_ADC1_Init(void)
     }
     /**Configure Regular Channel
     */
+    /*
     sConfig.Channel = ADC_CHANNEL_0;
     sConfig.Rank = ADC_REGULAR_RANK_1;
     sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
@@ -258,22 +260,27 @@ static void MX_ADC1_Init(void)
     {
       Error_Handler();
     }
+    */
     /**Configure Regular Channel
     */
+    /*
     sConfig.Channel = ADC_CHANNEL_1;
     sConfig.Rank = ADC_REGULAR_RANK_2;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
     {
       Error_Handler();
     }
+    */
     /**Configure Regular Channel
     */
+    /*
     sConfig.Channel = ADC_CHANNEL_VREFINT;
     sConfig.Rank = ADC_REGULAR_RANK_3;
     if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
     {
       Error_Handler();
     }
+    */
 
     /* USER CODE BEGIN ADC1_Init 2 */
 
@@ -412,14 +419,16 @@ static void MX_GPIO_Init(void){
     GPIO_InitStruct.Pin = OK_PIN;
     HAL_GPIO_Init(OK_PORT, &GPIO_InitStruct);
 
-    /* ADC inputs */
+    /* ADC inputs
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
 
     GPIO_InitStruct.Pin = LOAD_TEMP_PIN;
     HAL_GPIO_Init(LOAD_TEMP_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
     GPIO_InitStruct.Pin = REG_TEMP_PIN;
     HAL_GPIO_Init(REG_TEMP_PORT, &GPIO_InitStruct);
+    */
 
     /* DEBUG pins */
 

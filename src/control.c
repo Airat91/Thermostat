@@ -130,7 +130,7 @@ void control_task( const void *parameters){
         value[2] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_3);
         for (u8 i =0;i<MEAS_NUM;i++){
             if (!memcmp(meas[i].name,"Floor",sizeof("Floor"))){
-                val = -0.0284f*meas[3].value+61.94f;
+                val = -4.6277f*meas[3].value*meas[3].value*meas[3].value+25.09f*meas[3].value*meas[3].value-70.672f*meas[3].value+83.718f;
                 dcts_write_meas_value (i, val);
             }else if (!memcmp(meas[i].name,"Reg",sizeof("Reg"))){
                 val = meas[4].value/0.01f;
