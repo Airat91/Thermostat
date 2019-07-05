@@ -42,6 +42,7 @@ extern const uint8_t  act_num;  //
 extern const uint8_t  alrm_num; // 
 #define MEAS_NUM  5
 #define RELE_NUM  1
+#define ACT_NUM   1
 
 typedef struct {                // таблица структур, содержащая данные измеряемых параметров
     char        name[9];        // строковое название измеряемого параметра (можно использовать кириллицу, 
@@ -98,5 +99,7 @@ extern alrm_t alrm[];
 
 void dcts_init (void);
 void dcts_write_meas_value (uint8_t meas_channel, float value);
+void dcts_write_act_meas_value (uint8_t act_channel, float value);
+void dcts_write_act_set_value (uint8_t act_channel, float value);
 
 #endif /*DCTS*/

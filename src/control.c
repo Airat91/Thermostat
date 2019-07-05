@@ -49,6 +49,7 @@
 #include "time_table.h"
 #include "stm32f1xx_ll_gpio.h"
 #include "dcts.h"
+#include "pin_map.h"
 extern IWDG_HandleTypeDef hiwdg;
 /* fb pid */
 typedef union DataTypes_union{
@@ -94,12 +95,16 @@ typedef struct {
 
 void pid(pid_in_t * inputs,pid_var_t * vars,\
                   pid_out_t * outputs);
+static void reg_on_control(void);
 
 #define DEFAULT_OUT 0.0f
 #define REQUIRE_VALUE 27.0f
+#define MAX_REG_TEMP 100.0f
+#define HYSTERESIS 0.5f
 extern RTC_HandleTypeDef hrtc;
 extern ADC_HandleTypeDef hadc1;
 void control_task( const void *parameters){
+    (void) parameters;
     u32 tick=0;
     pid_in_t in;
     pid_var_t var;
@@ -118,37 +123,37 @@ void control_task( const void *parameters){
     in.kd.data.float32 = -100.0f;
     in.position.data.float32 = DEFAULT_OUT;
     in.gist_tube.data.float32 = 0.5f;
+    uint32_t last_wake_time = osKernelSysTick();
     while(1){
         u8 sensor_data_valid;
         tick++;
         sensor_data_valid = 0;
-        /*get temp start */
-        /*get temp end */
+
         u32 value[3];
         value[0] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
         value[1] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2);
         value[2] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_3);
-        for (u8 i =0;i<MEAS_NUM;i++){
-            if (!memcmp(meas[i].name,"Floor",sizeof("Floor"))){
-                val = -4.6277f*meas[3].value*meas[3].value*meas[3].value+25.09f*meas[3].value*meas[3].value-70.672f*meas[3].value+83.718f;
-                dcts_write_meas_value (i, val);
-            }else if (!memcmp(meas[i].name,"Reg",sizeof("Reg"))){
-                val = meas[4].value/0.01f;
-                dcts_write_meas_value (i, val);
-            }else if (!memcmp(meas[i].name,"ADC0",sizeof("ADC0"))){
-                val = ((float)value[0]/value[2])*1.2f;
-                dcts_write_meas_value (i, val);
-            }else if(!memcmp(meas[i].name,"ADC1",sizeof("ADC0"))){
-                val = ((float)value[1]/value[2])*1.2f;
-                dcts_write_meas_value (i, val);
-            }
-        }
-        //HAL_ADCEx_InjectedStart(&hadc1);
+
+        /* ADC0 */
+        val = ((float)value[0]/value[2])*1.2f;
+        dcts_write_meas_value (3, val);
+
+        /* ADC1 */
+        val = ((float)value[1]/value[2])*1.2f;
+        dcts_write_meas_value (4, val);
+
+        /* Floor T */
+        val = -4.6277f*meas[3].value*meas[3].value*meas[3].value+25.09f*meas[3].value*meas[3].value-70.672f*meas[3].value+83.718f;
+        dcts_write_act_meas_value (0, val);
+
+        /* Reg T */
+        val = meas[4].value/0.01f;
+        dcts_write_meas_value (1, val);
 
         pid(&in,&var,&out);
-        osDelay(1000);
+        reg_on_control();
         HAL_IWDG_Refresh(&hiwdg);
-        //osDelayUntil(&ds18_time,_DS18B20_UPDATE_INTERVAL_MS);
+        osDelayUntil(&last_wake_time,CONTROL_TASK_PERIOD);
     }
 }
 
@@ -212,6 +217,24 @@ void pid(pid_in_t * FBInputs,pid_var_t * FBVars,\
     }
     //выдаем значение на выход
     OUT->output.data.float32 = VAR->prev_control_integral.data.float32 ;
+}
+static void reg_on_control(void){
+    if (meas[1].value > MAX_REG_TEMP){
+        HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_SET);
+        rele[0].state = 0;
+    }else{
+        if(rele[0].state & STATE_CONTROL){  // если идет нагрев
+            if(act[0].meas_value > act[0].set_value + HYSTERESIS){
+                HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_SET);
+                rele[0].state = 0;
+            }
+        }else{
+            if(act[0].meas_value < act[0].set_value - HYSTERESIS){
+                HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_RESET);
+                rele[0].state = 1;
+            }
+        }
+    }
 }
 
 

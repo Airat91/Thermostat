@@ -50,6 +50,7 @@
 #endif
 /*add functions and variable declarations below */
 void display_task( const void *parameters);
+#define DISPLAY_TASK_PERIOD 500
 /*add functions and variable declarations before */
 #ifdef __cplusplus
 }

@@ -51,21 +51,23 @@ extern IWDG_HandleTypeDef hiwdg;
 extern RTC_HandleTypeDef hrtc;
 static u8 display_time(void);
 void display_task( const void *parameters){
+    (void) parameters;
     u32 tick=0;
+    u32 last_wake_time = osKernelSysTick();
     taskENTER_CRITICAL();
     HAL_IWDG_Refresh(&hiwdg);
     SSD1306_Init();
     HAL_IWDG_Refresh(&hiwdg);
-    //SSD1306_DrawCircle(10, 33, 7, SSD1306_COLOR_WHITE,0.5);
     SSD1306_UpdateScreen();
-    //u8 measerment_number = sizeof(meas)/sizeof(meas_t);
     taskEXIT_CRITICAL();
     while(1){
         char buff[32];
+        /*
         sprintf(buff,"temperature off");
         SSD1306_GotoXY(0, 50); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
         SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE); //пишем надпись в выставленной позиции шрифтом "Font_7x10" белым цветом.
         SSD1306_UpdateScreen();
+        */
         if(SSD1306.error_num){
             SSD1306.Initialized = 0;
         }
@@ -74,54 +76,44 @@ void display_task( const void *parameters){
                 SSD1306_Init();
             }
         }
-        for (u8 i = 0; i < MEAS_NUM; i++){
 
-            if (!memcmp(meas[i].name,"Floor",sizeof("Floor"))){
-                sprintf(buff,"Floor %3.3f ", meas[i].value);
-                strcat(buff, meas[i].unit);
-                SSD1306_GotoXY(0, 10); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
-                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE); //пишем надпись в выставленной позиции шрифтом "Font_7x10" белым цветом.
-                SSD1306_UpdateScreen();
+        /* Print measured values */
 
-            }else if (!memcmp(meas[i].name,"Reg",sizeof("Reg"))){
-                sprintf(buff,"Reg   %3.3f ",meas[i].value);
-                strcat(buff, meas[i].unit);
-                SSD1306_GotoXY(0, 20); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
-                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE); //пишем надпись в выставленной позиции шрифтом "Font_7x10" белым цветом.
-                SSD1306_UpdateScreen();
+        sprintf(buff,"Set temp  %3.3f %s", (double)act[0].set_value, act[0].unit);
+        SSD1306_GotoXY(0, 10); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
+        SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
-            }else if (!memcmp(meas[i].name,"ADC0",sizeof("ADC0"))){
-                sprintf(buff,"ADC0  %3.3f ",meas[i].value);
-                strcat(buff, meas[i].unit);
-                SSD1306_GotoXY(0, 30); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
-                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE); //пишем надпись в выставленной позиции шрифтом "Font_7x10" белым цветом.
-                SSD1306_UpdateScreen();
+        sprintf(buff,"Real temp %3.3f %s", (double)act[0].meas_value, act[0].unit);
+        SSD1306_GotoXY(0, 20); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
+        SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
-            }else if(!memcmp(meas[i].name,"ADC1",sizeof("ADC0"))){
-                sprintf(buff,"ADC1  %3.3f ",meas[i].value);
-                strcat(buff, meas[i].unit);
-                SSD1306_GotoXY(0, 40); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
-                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE); //пишем надпись в выставленной позиции шрифтом "Font_7x10" белым цветом.
-                SSD1306_UpdateScreen();
+        sprintf(buff,"Reg temp  %3.3f %s", (double)meas[1].value, act[1].unit);
+        SSD1306_GotoXY(0, 35); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
+        SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
-            }
-        }
+        /*for (u8 i = 0; i < MEAS_NUM; i++){
+            sprintf(buff,"%s %3.3f %s", meas[i].name, (double)meas[i].value, meas[i].unit);
+            SSD1306_GotoXY(0, i*10 + 10); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
+            SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE); //пишем надпись в выставленной позиции шрифтом "Font_7x10" белым цветом.
+        }*/
 
         display_time();
-        osDelay(500);
+
+        SSD1306_UpdateScreen();
+        //osDelay(500);
         HAL_IWDG_Refresh(&hiwdg);
-        //osDelayUntil(&ds18_time,_DS18B20_UPDATE_INTERVAL_MS);
+        osDelayUntil(&last_wake_time, DISPLAY_TASK_PERIOD);
     }
 }
 u8 display_time(void){
     RTC_TimeTypeDef time;
-    LL_GPIO_TogglePin(LED_PORT, LED_PIN);
+    //LL_GPIO_TogglePin(LED_PORT, LED_PIN);
     HAL_RTC_GetTime(&hrtc,&time,RTC_FORMAT_BIN);
     char buff[32];
     sprintf(buff,"time %2u:%2u:%2u",time.Hours,time.Minutes,time.Seconds);
     SSD1306_GotoXY(0, 0); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
     SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE); //пишем надпись в выставленной позиции шрифтом "Font_7x10" белым цветом.
-    SSD1306_UpdateScreen();
+    //SSD1306_UpdateScreen();
 
     return 0x00;
 }
