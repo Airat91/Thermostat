@@ -144,7 +144,11 @@ void control_task( const void *parameters){
 
         /* Floor T */
         val = -4.6277f*meas[3].value*meas[3].value*meas[3].value+25.09f*meas[3].value*meas[3].value-70.672f*meas[3].value+83.718f;
-        dcts_write_act_meas_value (0, val);
+        if(val > 0){
+            dcts_write_act_meas_value (0, val);
+        }else{
+            dcts_write_act_meas_value (0, 99.9f);
+        }
 
         /* Reg T */
         val = meas[4].value/0.01f;

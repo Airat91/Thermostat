@@ -72,17 +72,17 @@ void display_task( const void *parameters){
         }
 
         /* Print measured values */
+        sprintf(buff,"%2.1f", (double)act[0].meas_value);
+        SSD1306_GotoXY(0, 14);
+        SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
 
-        sprintf(buff,"Set temp  %3.3f %s", (double)act[0].set_value, act[0].unit);
-        SSD1306_GotoXY(0, 10); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
+
+        sprintf(buff,"��� %2.0f%s", (double)act[0].set_value, act[0].unit);
+        SSD1306_GotoXY(70, 16);
         SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
-        sprintf(buff,"Real temp %3.3f %s", (double)act[0].meas_value, act[0].unit);
-        SSD1306_GotoXY(0, 20); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
-        SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-
-        sprintf(buff,"Reg temp  %3.3f %s", (double)meas[1].value, act[1].unit);
-        SSD1306_GotoXY(0, 35); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
+        sprintf(buff,"���%3.0f%s", (double)meas[1].value, meas[1].unit);
+        SSD1306_GotoXY(70, 29);
         SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
         display_time();
@@ -98,25 +98,25 @@ u8 display_time(void){
     char weekday[3] = {0};
     switch (rtc.weekday) {
     case 1:
-        strcpy(weekday, "Пн");
+        strcpy(weekday, "��");
         break;
     case 2:
-        strcpy(weekday, "Вт");
+        strcpy(weekday, "��");
         break;
     case 3:
-        strcpy(weekday, "Ср");
+        strcpy(weekday, "��");
         break;
     case 4:
-        strcpy(weekday, "Чт");
+        strcpy(weekday, "��");
         break;
     case 5:
-        strcpy(weekday, "Пт");
+        strcpy(weekday, "��");
         break;
     case 6:
-        strcpy(weekday, "Сб");
+        strcpy(weekday, "��");
         break;
     case 7:
-        strcpy(weekday, "Вс");
+        strcpy(weekday, "��");
         break;
     }
     sprintf(buff,"%2d.%2d.%4d ", rtc.day, rtc.month, rtc.year);
@@ -126,10 +126,10 @@ u8 display_time(void){
     if(rtc.month < 10){
         buff[3] = '0';
     }
-    SSD1306_GotoXY(0, 2);
+    SSD1306_GotoXY(0, 0);
     SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
-    SSD1306_GotoXY(83, 2);
+    SSD1306_GotoXY(74, 0);
     SSD1306_Puts(weekday, &Font_7x10, SSD1306_COLOR_WHITE);
 
     sprintf(buff,"%2d:%2d", rtc.hour, rtc.minute);
@@ -139,7 +139,7 @@ u8 display_time(void){
     if(rtc.minute < 10){
         buff[3] = '0';
     }
-    SSD1306_GotoXY(92, 2);
+    SSD1306_GotoXY(92, 0);
     SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
     return 0x00;

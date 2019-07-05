@@ -29,11 +29,11 @@ act_t act[ACT_NUM];
 
 void dcts_init () {
     strcpy (meas[0].name, "Floor");
-    strcpy (meas[0].unit, "Â°C");
+    strcpy (meas[0].unit, "°C");
     meas[0].value = 0;
     
     strcpy (meas[1].name, "Reg");
-    strcpy (meas[1].unit, "Â°C");
+    strcpy (meas[1].unit, "°C");
     meas[1].value = 0;
     
     strcpy (meas[2].name, "Rh");
@@ -51,9 +51,9 @@ void dcts_init () {
     rele[0].state = 0;
 
     strcpy (act[0].name, "Floor");
-    strcpy (act[0].unit, "Â°C");
+    strcpy (act[0].unit, "°C");
     act[0].state = 0;
-    act[0].set_value = 80.0f;
+    act[0].set_value = 35.0f;
     act[0].meas_value = 0.0f;
 }
 
