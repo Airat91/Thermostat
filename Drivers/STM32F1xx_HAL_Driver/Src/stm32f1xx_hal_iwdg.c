@@ -204,6 +204,7 @@ HAL_StatusTypeDef HAL_IWDG_Init(IWDG_HandleTypeDef *hiwdg)
 }
 
 /**
+
   * @}
   */
 
