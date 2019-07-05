@@ -59,6 +59,7 @@
 #include "pin_map.h"
 
 #define FEEDER 0
+#define DEFAULT_TASK_PERIOD 100
 
 
 /* Private variables ---------------------------------------------------------*/
@@ -404,26 +405,28 @@ static void MX_GPIO_Init(void){
 
 /* StartDefaultTask function */
 void default_task(void const * argument){
-    /* init code for USB_DEVICE */
-    (void)argument;
-    TickType_t time;
-    //MX_USB_DEVICE_Init();
-    HAL_IWDG_Refresh(&hiwdg);
-    while(1)  {
-        for (char i=0;i<_DS18B20_MAX_SENSORS;i++){
-            if(ds18b20[i].data_validate){
-                char temp_buff[32];
-                char len;
-                time = osKernelSysTick();
-                len = sprintf(temp_buff,"temp - %lu:%f",time,ds18b20[i].Temperature);
-                time = osKernelSysTick();
-                while (osKernelSysTick()>(time+10)){
 
-                }
-            }
-        }
+    (void)argument;
+    RTC_TimeTypeDef time;
+    RTC_DateTypeDef date;
+    uint32_t last_wake_time = osKernelSysTick();
+
+    HAL_IWDG_Refresh(&hiwdg);
+    while(1){
+        HAL_RTC_GetTime(&hrtc,&time,RTC_FORMAT_BIN);
+        HAL_RTC_GetDate(&hrtc,&date,RTC_FORMAT_BIN);
+
+        rtc.hour = time.Hours;
+        rtc.minute = time.Minutes;
+        rtc.second = time.Seconds;
+
+        rtc.day = date.Date;
+        rtc.month = date.Month;
+        rtc.year = date.Year + 2000;
+        rtc.weekday = date.WeekDay + 1;
+
         HAL_IWDG_Refresh(&hiwdg);
-        osDelay(1000);
+        osDelayUntil(&last_wake_time, DEFAULT_TASK_PERIOD);
     }
     /* USER CODE END 5 */
 }

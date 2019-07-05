@@ -53,7 +53,7 @@ static u8 display_time(void);
 void display_task( const void *parameters){
     (void) parameters;
     u32 tick=0;
-    u32 last_wake_time = osKernelSysTick();
+    uint32_t last_wake_time = osKernelSysTick();
     taskENTER_CRITICAL();
     HAL_IWDG_Refresh(&hiwdg);
     SSD1306_Init();
@@ -62,12 +62,6 @@ void display_task( const void *parameters){
     taskEXIT_CRITICAL();
     while(1){
         char buff[32];
-        /*
-        sprintf(buff,"temperature off");
-        SSD1306_GotoXY(0, 50); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
-        SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE); //пишем надпись в выставленной позиции шрифтом "Font_7x10" белым цветом.
-        SSD1306_UpdateScreen();
-        */
         if(SSD1306.error_num){
             SSD1306.Initialized = 0;
         }
@@ -91,12 +85,6 @@ void display_task( const void *parameters){
         SSD1306_GotoXY(0, 35); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
         SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
-        /*for (u8 i = 0; i < MEAS_NUM; i++){
-            sprintf(buff,"%s %3.3f %s", meas[i].name, (double)meas[i].value, meas[i].unit);
-            SSD1306_GotoXY(0, i*10 + 10); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
-            SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE); //пишем надпись в выставленной позиции шрифтом "Font_7x10" белым цветом.
-        }*/
-
         display_time();
 
         SSD1306_UpdateScreen();
@@ -106,14 +94,53 @@ void display_task( const void *parameters){
     }
 }
 u8 display_time(void){
-    RTC_TimeTypeDef time;
-    //LL_GPIO_TogglePin(LED_PORT, LED_PIN);
-    HAL_RTC_GetTime(&hrtc,&time,RTC_FORMAT_BIN);
-    char buff[32];
-    sprintf(buff,"time %2u:%2u:%2u",time.Hours,time.Minutes,time.Seconds);
-    SSD1306_GotoXY(0, 0); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
-    SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE); //пишем надпись в выставленной позиции шрифтом "Font_7x10" белым цветом.
-    //SSD1306_UpdateScreen();
+    char buff[20] = {0};
+    char weekday[3] = {0};
+    switch (rtc.weekday) {
+    case 1:
+        strcpy(weekday, "Пн");
+        break;
+    case 2:
+        strcpy(weekday, "Вт");
+        break;
+    case 3:
+        strcpy(weekday, "Ср");
+        break;
+    case 4:
+        strcpy(weekday, "Чт");
+        break;
+    case 5:
+        strcpy(weekday, "Пт");
+        break;
+    case 6:
+        strcpy(weekday, "Сб");
+        break;
+    case 7:
+        strcpy(weekday, "Вс");
+        break;
+    }
+    sprintf(buff,"%2d.%2d.%4d ", rtc.day, rtc.month, rtc.year);
+    if(rtc.day < 10){
+        buff[0] = '0';
+    }
+    if(rtc.month < 10){
+        buff[3] = '0';
+    }
+    SSD1306_GotoXY(0, 2);
+    SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+
+    SSD1306_GotoXY(83, 2);
+    SSD1306_Puts(weekday, &Font_7x10, SSD1306_COLOR_WHITE);
+
+    sprintf(buff,"%2d:%2d", rtc.hour, rtc.minute);
+    if(rtc.hour < 10){
+        buff[0] = '0';
+    }
+    if(rtc.minute < 10){
+        buff[3] = '0';
+    }
+    SSD1306_GotoXY(92, 2);
+    SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
     return 0x00;
 }

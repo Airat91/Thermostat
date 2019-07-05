@@ -30,6 +30,7 @@ typedef struct {                // структура, содержащая да
     uint8_t     day;            // число
     uint8_t     month;          // месяц
     uint16_t    year;           // год
+    uint8_t     weekday;        // день недели
     uint8_t     hour;           // часы (в 24-часовом формате)
     uint8_t     minute;         // минуты
     uint8_t     second;         // секунды

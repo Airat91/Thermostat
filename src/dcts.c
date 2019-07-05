@@ -12,6 +12,7 @@ rtc_t rtc = {
     .day = 0, 
     .month = 0, 
     .year = 2000, 
+    .weekday = 1,
     .hour = 0, 
     .minute = 0, 
     .second = 0
@@ -52,7 +53,7 @@ void dcts_init () {
     strcpy (act[0].name, "Floor");
     strcpy (act[0].unit, "°C");
     act[0].state = 0;
-    act[0].set_value = 40.0f;
+    act[0].set_value = 80.0f;
     act[0].meas_value = 0.0f;
 }
 
