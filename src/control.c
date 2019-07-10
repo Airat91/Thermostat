@@ -96,11 +96,13 @@ typedef struct {
 void pid(pid_in_t * inputs,pid_var_t * vars,\
                   pid_out_t * outputs);
 static void reg_on_control(void);
+static float ntc_tmpr_calc(float adc_val);
 
 #define DEFAULT_OUT 0.0f
 #define REQUIRE_VALUE 27.0f
 #define MAX_REG_TEMP 100.0f
 #define HYSTERESIS 0.5f
+#define TEMP_BUFF_SIZE  10
 extern RTC_HandleTypeDef hrtc;
 extern ADC_HandleTypeDef hadc1;
 void control_task( const void *parameters){
@@ -110,6 +112,7 @@ void control_task( const void *parameters){
     pid_var_t var;
     pid_out_t out;
     float val;
+    float temp_buf[TEMP_BUFF_SIZE] = {0};
     var.prev_error_integral.data.float32 = 0.0;
     var.error_integral.data.float32  = 0.0;
     var.number_tick.data.uint32=0.0;
@@ -143,8 +146,14 @@ void control_task( const void *parameters){
         dcts_write_meas_value (4, val);
 
         /* Floor T */
-        val = -4.6277f*meas[3].value*meas[3].value*meas[3].value+25.09f*meas[3].value*meas[3].value-70.672f*meas[3].value+83.718f;
+        val = ntc_tmpr_calc(meas[3].value);
         if(val > 0){
+            temp_buf[tick%TEMP_BUFF_SIZE] = val;
+            val = 0.0f;
+            for(u8 i = 0; i < TEMP_BUFF_SIZE; i++){
+                val += temp_buf[i];
+            }
+            val = val/TEMP_BUFF_SIZE;
             dcts_write_act_meas_value (0, val);
         }else{
             dcts_write_act_meas_value (0, 99.9f);
@@ -155,7 +164,9 @@ void control_task( const void *parameters){
         dcts_write_meas_value (1, val);
 
         pid(&in,&var,&out);
-        reg_on_control();
+        if(tick > TEMP_BUFF_SIZE){
+            reg_on_control();
+        }
         HAL_IWDG_Refresh(&hiwdg);
         osDelayUntil(&last_wake_time,CONTROL_TASK_PERIOD);
     }
@@ -239,6 +250,17 @@ static void reg_on_control(void){
             }
         }
     }
+}
+
+static float ntc_tmpr_calc(float volt){
+    float result = 0.0f;
+    /* T = A*x^3 + B*x^2 + C*x + D */
+#define A   -4.6277f
+#define B   25.09f
+#define C   -70.672f
+#define D   83.718f
+    result = A*volt*volt*volt + B*volt*volt + C*volt + D;
+    return result;
 }
 
 
