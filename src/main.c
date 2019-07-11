@@ -395,6 +395,9 @@ static void MX_GPIO_Init(void){
     GPIO_InitStruct.Pin = SYNC_PIN;
     HAL_GPIO_Init(SYNC_PORT, &GPIO_InitStruct);
 
+    HAL_NVIC_SetPriority(EXTI9_5_IRQn, 1, 1);
+    HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
     /* REG_ON pin */
     HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_SET);
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;

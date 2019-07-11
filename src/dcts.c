@@ -19,12 +19,13 @@ rtc_t rtc = {
 };
 float pwr = 0;
 
+#define MEAS_NUM    5
+#define ACT_NUM 1
+
 const uint8_t meas_num = MEAS_NUM;
-const uint8_t rele_num = RELE_NUM;
 const uint8_t act_num = ACT_NUM;
 
 meas_t meas[MEAS_NUM];
-rele_t rele[RELE_NUM];
 act_t act[ACT_NUM];
 
 void dcts_init () {
@@ -47,14 +48,14 @@ void dcts_init () {
     strcpy (meas[4].unit, "V");
     meas[4].value = 0;
 
-    strcpy (rele[0].name, "Heating");
-    rele[0].state = 0;
-
     strcpy (act[0].name, "Floor");
     strcpy (act[0].unit, "°C");
-    act[0].state = 0;
     act[0].set_value = 35.0f;
     act[0].meas_value = 0.0f;
+    act[0].state.control = TRUE;
+    act[0].state.pin_state = FALSE;
+    act[0].state.short_cir = FALSE;
+    act[0].state.fall = FALSE;
 }
 
 void dcts_write_meas_value (uint8_t meas_channel, float value){

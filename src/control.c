@@ -51,6 +51,7 @@
 #include "dcts.h"
 #include "pin_map.h"
 extern IWDG_HandleTypeDef hiwdg;
+uint8_t PWM_duty = 0;
 /* fb pid */
 typedef union DataTypes_union{
     u8 bit:1;
@@ -100,9 +101,7 @@ static float ntc_tmpr_calc(float adc_val);
 
 #define DEFAULT_OUT 0.0f
 #define REQUIRE_VALUE 27.0f
-#define MAX_REG_TEMP 100.0f
-#define HYSTERESIS 0.5f
-#define TEMP_BUFF_SIZE  10
+
 extern RTC_HandleTypeDef hrtc;
 extern ADC_HandleTypeDef hadc1;
 void control_task( const void *parameters){
@@ -234,20 +233,16 @@ void pid(pid_in_t * FBInputs,pid_var_t * FBVars,\
     OUT->output.data.float32 = VAR->prev_control_integral.data.float32 ;
 }
 static void reg_on_control(void){
-    if (meas[1].value > MAX_REG_TEMP){
-        HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_SET);
-        rele[0].state = 0;
+    if (meas[1].value > MAX_REG_TEMP){  // overheating
+        act[0].state.short_cir = TRUE;
     }else{
-        if(rele[0].state & STATE_CONTROL){  // если идет нагрев
-            if(act[0].meas_value > act[0].set_value + HYSTERESIS){
-                HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_SET);
-                rele[0].state = 0;
-            }
+        act[0].state.short_cir = FALSE;
+        if (act[0].meas_value >= act[0].set_value){
+            PWM_duty = 0;
+        }else if ((act[0].meas_value >= act[0].set_value - HYSTERESIS) && (act[0].meas_value < act[0].set_value)){
+            PWM_duty = 30;
         }else{
-            if(act[0].meas_value < act[0].set_value - HYSTERESIS){
-                HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_RESET);
-                rele[0].state = 1;
-            }
+            PWM_duty = 100;
         }
     }
 }

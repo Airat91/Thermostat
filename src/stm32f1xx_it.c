@@ -35,6 +35,9 @@
 #include "stm32f1xx.h"
 #include "stm32f1xx_it.h"
 #include "cmsis_os.h"
+#include "dcts.h"
+#include "pin_map.h"
+#include "control.h"
 
 /* USER CODE BEGIN 0 */
 
@@ -239,6 +242,38 @@ void USART1_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
+
+void EXTI9_5_IRQHandler(void) {
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_5);
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_6);
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_7);
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_9);
+
+    static uint8_t sync_tick = 0;
+
+    if ((act[0].state.control == FALSE)||(act[0].state.short_cir == TRUE)){
+        HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_SET);
+        act[0].state.pin_state = FALSE;
+    }else{
+        if(act[0].state.pin_state){  // если идет нагрев
+            if(sync_tick > PWM_duty){
+                HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_SET);
+                act[0].state.pin_state = FALSE;
+            }
+        }else{
+            if((sync_tick == 0) && (PWM_duty > 0)){
+                HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_RESET);
+                act[0].state.pin_state = TRUE;
+            }
+        }
+    }
+
+    sync_tick++;
+    if(sync_tick == 100){
+        sync_tick = 0;
+    }
+}
 
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
