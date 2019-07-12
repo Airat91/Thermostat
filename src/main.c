@@ -57,6 +57,7 @@
 #include "step.h"
 #include "dcts.h"
 #include "pin_map.h"
+#include "buttons.h"
 
 #define FEEDER 0
 #define DEFAULT_TASK_PERIOD 100
@@ -100,7 +101,7 @@ int main(void){
     MX_RTC_Init();
     MX_ADC1_Init();
     MX_USART1_UART_Init();
-    MX_TIM3_Init();
+    //MX_TIM3_Init();
     MX_TIM2_Init();
     dcts_init();
     HAL_ADC_Start(&hadc1);
@@ -120,6 +121,9 @@ int main(void){
 
     osThreadDef(display_task, display_task, osPriorityNormal, 0, 364);
     defaultTaskHandle = osThreadCreate(osThread(display_task), NULL);
+
+    osThreadDef(buttons_task, buttons_task, osPriorityNormal, 0, 364);
+    defaultTaskHandle = osThreadCreate(osThread(buttons_task), NULL);
 
 #endif
 
