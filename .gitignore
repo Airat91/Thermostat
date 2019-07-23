@@ -1,6 +1,7 @@
 build/
 cmake_arm/
 CMakeLists.txt.user
+*.a
 *.*-pre1
 *.bin
 *.o

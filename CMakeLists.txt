@@ -33,7 +33,6 @@ file(GLOB FREERTOS_HEADERS  ${FREERTOS_HEADERS} freertos/cmsis_os/*.h)
 file(GLOB HAL_SOURCES Drivers/${MCU_FAMILY}_HAL_DRIVER/Src/*.c)
 file(GLOB STM32F2_SYSTEM Drivers/CMSIS/Device/ST/${MCU_FAMILY}/Source/Templates/system_${MCU_FAMILY}.c)
 file(GLOB STM32F2_STARTUP Drivers/CMSIS/Device/ST/${MCU_FAMILY}/Source/Templates/gcc/startup_stm32f103x6.s)
-file(GLOB LINKER_FILE ${MCU_LINKER_SCRIPT})
 
 file(GLOB STM32_HEADERS Drivers/CMSIS/Device/ST/${MCU_FAMILY}/Include/*.h)
 file(GLOB STM32_HEADERS ${STM32_HEADERS} Drivers/CMSIS/Include/*.h)
@@ -109,9 +108,14 @@ target_compile_options(${BUILD_TARGET} PUBLIC
                               -g -O0 
                              -ffunction-sections -fdata-sections -fno-common -fmessage-length=0)
 
+set(compile_options -mcpu=${MCU_ARCH}
+                    -mthumb
+                    -mfloat-abi=${MCU_FLOAT_ABI} -std=gnu99 
+                    -ffunction-sections -fdata-sections -fno-common -fmessage-length=0 )
+
 target_compile_options(freertos_lib PUBLIC ${compile_options})
 target_compile_options(stm32f2_hal_lib PUBLIC ${compile_options})
-
+target_compile_options(${BUILD_TARGET} PUBLIC ${compile_options})
 file(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/build)
 
 set(HEX_FILE ${PROJECT_SOURCE_DIR}/build/${PROJECT_NAME}.hex)
