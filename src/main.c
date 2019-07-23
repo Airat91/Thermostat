@@ -50,16 +50,17 @@
 #include "main.h"
 #include "stm32f1xx_hal.h"
 #include "cmsis_os.h"
-//#include "usb_device.h"
 #include "ds18.h"
 #include "control.h"
 #include "display.h"
 #include "stm32f1xx_ll_gpio.h"
 #include "step.h"
 #include "dcts.h"
-//#include "usbd_cdc_if.h"
+#include "pin_map.h"
+#include "buttons.h"
 
 #define FEEDER 0
+#define DEFAULT_TASK_PERIOD 100
 
 
 /* Private variables ---------------------------------------------------------*/
@@ -100,7 +101,7 @@ int main(void){
     MX_RTC_Init();
     MX_ADC1_Init();
     MX_USART1_UART_Init();
-    MX_TIM3_Init();
+    //MX_TIM3_Init();
     MX_TIM2_Init();
     dcts_init();
     HAL_ADC_Start(&hadc1);
@@ -120,6 +121,9 @@ int main(void){
 
     osThreadDef(display_task, display_task, osPriorityNormal, 0, 364);
     defaultTaskHandle = osThreadCreate(osThread(display_task), NULL);
+
+    osThreadDef(buttons_task, buttons_task, osPriorityNormal, 0, 364);
+    defaultTaskHandle = osThreadCreate(osThread(buttons_task), NULL);
 
 #endif
 
@@ -198,34 +202,26 @@ void SystemClock_Config(void)
 /* ADC1 init function */
 static void MX_ADC1_Init(void)
 {
-    /* USER CODE BEGIN ADC1_Init 0 */
-
-    /* USER CODE END ADC1_Init 0 */
-
     ADC_InjectionConfTypeDef sConfigInjected = {0};
 
-    /* USER CODE BEGIN ADC1_Init 1 */
-
-    /* USER CODE END ADC1_Init 1 */
-    /**Common config
-    */
+    /* Common config */
     hadc1.Instance = ADC1;
     hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
     hadc1.Init.ContinuousConvMode = ENABLE;
     hadc1.Init.DiscontinuousConvMode = DISABLE;
     hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
     hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-    hadc1.Init.NbrOfConversion = 1;
+    hadc1.Init.NbrOfConversion = 3;
     if (HAL_ADC_Init(&hadc1) != HAL_OK)
     {
       Error_Handler();
     }
-    /**Configure Injected Channel
-    */
+
+    /* Configure Injected Channels */
     sConfigInjected.InjectedChannel = ADC_CHANNEL_0;
     sConfigInjected.InjectedRank = ADC_INJECTED_RANK_1;
-    sConfigInjected.InjectedNbrOfConversion = 2;
-    sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+    sConfigInjected.InjectedNbrOfConversion = 3;
+    sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_239CYCLES_5;
     sConfigInjected.ExternalTrigInjecConv = ADC_INJECTED_SOFTWARE_START;
     sConfigInjected.AutoInjectedConv = ENABLE;
     sConfigInjected.InjectedDiscontinuousConvMode = DISABLE;
@@ -234,8 +230,7 @@ static void MX_ADC1_Init(void)
     {
       Error_Handler();
     }
-    /**Configure Injected Channel
-    */
+
     sConfigInjected.InjectedChannel = ADC_CHANNEL_1;
     sConfigInjected.InjectedRank = ADC_INJECTED_RANK_2;
     if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
@@ -243,9 +238,12 @@ static void MX_ADC1_Init(void)
       Error_Handler();
     }
 
-    /* USER CODE BEGIN ADC1_Init 2 */
-
-    /* USER CODE END ADC1_Init 2 */
+    sConfigInjected.InjectedChannel = ADC_CHANNEL_VREFINT;
+    sConfigInjected.InjectedRank = ADC_INJECTED_RANK_3;
+    if (HAL_ADCEx_InjectedConfigChannel(&hadc1, &sConfigInjected) != HAL_OK)
+    {
+      Error_Handler();
+    }
 
 }
 
@@ -355,48 +353,87 @@ static void MX_USART1_UART_Init(void)
         * EXTI
 */
 static void MX_GPIO_Init(void){
+
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+
     /* GPIO Ports Clock Enable */
     __HAL_RCC_GPIOC_CLK_ENABLE();
-    __HAL_RCC_GPIOD_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOB_CLK_ENABLE();
-    LL_GPIO_SetPinMode(AIR_PORT, AIR_PIN, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinMode(FLOW_PORT, FLOW_PIN, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinMode(LIGTH_PORT, LIGTH_PIN, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinMode(LIGTH2_PORT, LIGTH2_PIN, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinMode(LED_PORT, LED_PIN, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinMode(STEP_PORT, STEP_OUT1_1, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinOutputType(STEP_PORT, STEP_OUT1_1,LL_GPIO_OUTPUT_PUSHPULL);
-    LL_GPIO_SetPinMode(STEP_PORT, STEP_OUT1_2, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinOutputType(STEP_PORT, STEP_OUT1_2,LL_GPIO_OUTPUT_PUSHPULL);
-    LL_GPIO_SetPinMode(STEP_PORT, STEP_OUT2_1, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinOutputType(STEP_PORT, STEP_OUT2_1,LL_GPIO_OUTPUT_PUSHPULL);
-    LL_GPIO_SetPinMode(STEP_PORT, STEP_OUT2_2, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinOutputType(STEP_PORT, STEP_OUT2_2,LL_GPIO_OUTPUT_PUSHPULL);
+    __HAL_RCC_GPIOD_CLK_ENABLE();
+
+    /* Buttons */
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+
+    GPIO_InitStruct.Pin = UP_PIN;
+    HAL_GPIO_Init(UP_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = DOWN_PIN;
+    HAL_GPIO_Init(DOWN_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = LEFT_PIN;
+    HAL_GPIO_Init(LEFT_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = RIGHT_PIN;
+    HAL_GPIO_Init(RIGHT_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = OK_PIN;
+    HAL_GPIO_Init(OK_PORT, &GPIO_InitStruct);
+
+    /* ADC inputs
+    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+
+    GPIO_InitStruct.Pin = LOAD_TEMP_PIN;
+    HAL_GPIO_Init(LOAD_TEMP_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Pin = REG_TEMP_PIN;
+    HAL_GPIO_Init(REG_TEMP_PORT, &GPIO_InitStruct);
+    */
+
+    /* DEBUG pins */
+
+    /* I2C display pins */
+
+    /* 50 Hz SYNC pin */
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Pin = SYNC_PIN;
+    HAL_GPIO_Init(SYNC_PORT, &GPIO_InitStruct);
+
+    HAL_NVIC_SetPriority(EXTI9_5_IRQn, 1, 1);
+    HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
+    /* REG_ON pin */
+    HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_SET);
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Pin = REG_ON_PIN;
+    HAL_GPIO_Init(REG_ON_PORT, &GPIO_InitStruct);
 }
 
 /* StartDefaultTask function */
 void default_task(void const * argument){
-    /* init code for USB_DEVICE */
-    (void)argument;
-    TickType_t time;
-    //MX_USB_DEVICE_Init();
-    HAL_IWDG_Refresh(&hiwdg);
-    while(1)  {
-        for (char i=0;i<_DS18B20_MAX_SENSORS;i++){
-            if(ds18b20[i].data_validate){
-                char temp_buff[32];
-                char len;
-                time = osKernelSysTick();
-                len = sprintf(temp_buff,"temp - %lu:%f",time,ds18b20[i].Temperature);
-                time = osKernelSysTick();
-                while (osKernelSysTick()>(time+10)){
 
-                }
-            }
-        }
+    (void)argument;
+    RTC_TimeTypeDef time;
+    RTC_DateTypeDef date;
+    uint32_t last_wake_time = osKernelSysTick();
+
+    HAL_IWDG_Refresh(&hiwdg);
+    while(1){
+        HAL_RTC_GetTime(&hrtc,&time,RTC_FORMAT_BIN);
+        HAL_RTC_GetDate(&hrtc,&date,RTC_FORMAT_BIN);
+
+        rtc.hour = time.Hours;
+        rtc.minute = time.Minutes;
+        rtc.second = time.Seconds;
+
+        rtc.day = date.Date;
+        rtc.month = date.Month;
+        rtc.year = date.Year + 2000;
+        rtc.weekday = date.WeekDay + 1;
+
         HAL_IWDG_Refresh(&hiwdg);
-        osDelay(1000);
+        osDelayUntil(&last_wake_time, DEFAULT_TASK_PERIOD);
     }
     /* USER CODE END 5 */
 }

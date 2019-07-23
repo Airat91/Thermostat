@@ -23,7 +23,7 @@ void step_task( const void *parameters){
     step_out_2_disable();
     step_out_2_reverse();
     while(1){
-        LL_GPIO_TogglePin(LED_PORT, LED_PIN);
+        //LL_GPIO_TogglePin(LED_PORT, LED_PIN);
         HAL_RTC_GetTime(&hrtc,&time,RTC_FORMAT_BIN);
         u32 current_sec = time.Hours*3600 + time.Minutes*60 + time.Seconds;
         if(current_sec < 20){

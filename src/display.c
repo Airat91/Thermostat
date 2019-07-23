@@ -51,21 +51,17 @@ extern IWDG_HandleTypeDef hiwdg;
 extern RTC_HandleTypeDef hrtc;
 static u8 display_time(void);
 void display_task( const void *parameters){
+    (void) parameters;
     u32 tick=0;
+    uint32_t last_wake_time = osKernelSysTick();
     taskENTER_CRITICAL();
     HAL_IWDG_Refresh(&hiwdg);
     SSD1306_Init();
     HAL_IWDG_Refresh(&hiwdg);
-    //SSD1306_DrawCircle(10, 33, 7, SSD1306_COLOR_WHITE,0.5);
     SSD1306_UpdateScreen();
-    u8 measerment_number = sizeof(meas)/sizeof(meas_t);
     taskEXIT_CRITICAL();
     while(1){
         char buff[32];
-        sprintf(buff,"temperature off");
-        SSD1306_GotoXY(0, 44); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
-        SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE); //пишем надпись в выставленной позиции шрифтом "Font_7x10" белым цветом.
-        SSD1306_UpdateScreen();
         if(SSD1306.error_num){
             SSD1306.Initialized = 0;
         }
@@ -74,37 +70,77 @@ void display_task( const void *parameters){
                 SSD1306_Init();
             }
         }
-        for (u8 i =0;i<measerment_number;i++){
-            if (memcmp(meas[i].name,"ADC0",sizeof("ADC0"))){
-                sprintf(buff,"ADC0 %f",meas[i].value);
-                SSD1306_GotoXY(0, 10); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
-                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE); //пишем надпись в выставленной позиции шрифтом "Font_7x10" белым цветом.
-                SSD1306_UpdateScreen();
 
-            }else if(memcmp(meas[3].name,"ADC1",sizeof("ADC0"))){
-                sprintf(buff,"ADC1 %f",meas[i].value);
-                SSD1306_GotoXY(0, 20); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
-                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE); //пишем надпись в выставленной позиции шрифтом "Font_7x10" белым цветом.
-                SSD1306_UpdateScreen();
+        /* Print measured values */
+        sprintf(buff,"%2.1f", (double)act[0].meas_value);
+        SSD1306_GotoXY(0, 14);
+        SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
 
-            }
-        }
+
+        sprintf(buff,"��� %2.0f%s", (double)act[0].set_value, act[0].unit);
+        SSD1306_GotoXY(70, 16);
+        SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+
+        sprintf(buff,"���%3.0f%s", (double)meas[1].value, meas[1].unit);
+        SSD1306_GotoXY(70, 29);
+        SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
         display_time();
-        osDelay(1000);
+
+        SSD1306_UpdateScreen();
+        //osDelay(500);
         HAL_IWDG_Refresh(&hiwdg);
-        //osDelayUntil(&ds18_time,_DS18B20_UPDATE_INTERVAL_MS);
+        osDelayUntil(&last_wake_time, DISPLAY_TASK_PERIOD);
     }
 }
 u8 display_time(void){
-    RTC_TimeTypeDef time;
-    LL_GPIO_TogglePin(LED_PORT, LED_PIN);
-    HAL_RTC_GetTime(&hrtc,&time,RTC_FORMAT_BIN);
-    char buff[32];
-    sprintf(buff,"time %2u:%2u:%2u",time.Hours,time.Minutes,time.Seconds);
-    SSD1306_GotoXY(0, 0); //Устанавливаем курсор в позицию 0;44. Сначала по горизонтали, потом вертикали.
-    SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE); //пишем надпись в выставленной позиции шрифтом "Font_7x10" белым цветом.
-    SSD1306_UpdateScreen();
+    char buff[20] = {0};
+    char weekday[3] = {0};
+    switch (rtc.weekday) {
+    case 1:
+        strcpy(weekday, "��");
+        break;
+    case 2:
+        strcpy(weekday, "��");
+        break;
+    case 3:
+        strcpy(weekday, "��");
+        break;
+    case 4:
+        strcpy(weekday, "��");
+        break;
+    case 5:
+        strcpy(weekday, "��");
+        break;
+    case 6:
+        strcpy(weekday, "��");
+        break;
+    case 7:
+        strcpy(weekday, "��");
+        break;
+    }
+    sprintf(buff,"%2d.%2d.%4d ", rtc.day, rtc.month, rtc.year);
+    if(rtc.day < 10){
+        buff[0] = '0';
+    }
+    if(rtc.month < 10){
+        buff[3] = '0';
+    }
+    SSD1306_GotoXY(0, 0);
+    SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+
+    SSD1306_GotoXY(74, 0);
+    SSD1306_Puts(weekday, &Font_7x10, SSD1306_COLOR_WHITE);
+
+    sprintf(buff,"%2d:%2d", rtc.hour, rtc.minute);
+    if(rtc.hour < 10){
+        buff[0] = '0';
+    }
+    if(rtc.minute < 10){
+        buff[3] = '0';
+    }
+    SSD1306_GotoXY(92, 0);
+    SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
     return 0x00;
 }

@@ -49,7 +49,9 @@
 #include "time_table.h"
 #include "stm32f1xx_ll_gpio.h"
 #include "dcts.h"
+#include "pin_map.h"
 extern IWDG_HandleTypeDef hiwdg;
+uint8_t PWM_duty = 0;
 /* fb pid */
 typedef union DataTypes_union{
     u8 bit:1;
@@ -94,16 +96,22 @@ typedef struct {
 
 void pid(pid_in_t * inputs,pid_var_t * vars,\
                   pid_out_t * outputs);
+static void reg_on_control(void);
+static float ntc_tmpr_calc(float adc_val);
 
 #define DEFAULT_OUT 0.0f
 #define REQUIRE_VALUE 27.0f
+
 extern RTC_HandleTypeDef hrtc;
 extern ADC_HandleTypeDef hadc1;
 void control_task( const void *parameters){
+    (void) parameters;
     u32 tick=0;
     pid_in_t in;
     pid_var_t var;
     pid_out_t out;
+    float val;
+    float temp_buf[TEMP_BUFF_SIZE] = {0};
     var.prev_error_integral.data.float32 = 0.0;
     var.error_integral.data.float32  = 0.0;
     var.number_tick.data.uint32=0.0;
@@ -117,32 +125,49 @@ void control_task( const void *parameters){
     in.kd.data.float32 = -100.0f;
     in.position.data.float32 = DEFAULT_OUT;
     in.gist_tube.data.float32 = 0.5f;
+    uint32_t last_wake_time = osKernelSysTick();
     while(1){
         u8 sensor_data_valid;
         tick++;
         sensor_data_valid = 0;
-        /*get temp start */
-        /*get temp end */
-        u32 value[2];
-        u8 measerment_number = sizeof(meas)/sizeof(meas_t);
+
+        u32 value[3];
         value[0] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
         value[1] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2);
-        for (u8 i =0;i<measerment_number;i++){
-            float adc;
-            if (memcmp(meas[i].name,"ADC0",sizeof("ADC0"))){
-                adc = ((float)value[0]/4096.0f)*3.3f;
-                dcts_write_meas_value (i, adc);
-            }else if(memcmp(meas[3].name,"ADC1",sizeof("ADC0"))){
-                adc = ((float)value[1]/4096.0f)*3.3f;
-                dcts_write_meas_value (i, adc);
+        value[2] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_3);
+
+        /* ADC0 */
+        val = ((float)value[0]/value[2])*1.2f;
+        dcts_write_meas_value (3, val);
+
+        /* ADC1 */
+        val = ((float)value[1]/value[2])*1.2f;
+        dcts_write_meas_value (4, val);
+
+        /* Floor T */
+        val = ntc_tmpr_calc(meas[3].value);
+        if(val > 0){
+            temp_buf[tick%TEMP_BUFF_SIZE] = val;
+            val = 0.0f;
+            for(u8 i = 0; i < TEMP_BUFF_SIZE; i++){
+                val += temp_buf[i];
             }
+            val = val/TEMP_BUFF_SIZE;
+            dcts_write_act_meas_value (0, val);
+        }else{
+            dcts_write_act_meas_value (0, 99.9f);
         }
-        //HAL_ADCEx_InjectedStart(&hadc1);
+
+        /* Reg T */
+        val = meas[4].value/0.01f;
+        dcts_write_meas_value (1, val);
 
         pid(&in,&var,&out);
-        osDelay(1000);
+        if(tick > TEMP_BUFF_SIZE){
+            reg_on_control();
+        }
         HAL_IWDG_Refresh(&hiwdg);
-        //osDelayUntil(&ds18_time,_DS18B20_UPDATE_INTERVAL_MS);
+        osDelayUntil(&last_wake_time,CONTROL_TASK_PERIOD);
     }
 }
 
@@ -206,6 +231,31 @@ void pid(pid_in_t * FBInputs,pid_var_t * FBVars,\
     }
     //выдаем значение на выход
     OUT->output.data.float32 = VAR->prev_control_integral.data.float32 ;
+}
+static void reg_on_control(void){
+    if (meas[1].value > MAX_REG_TEMP){  // overheating
+        act[0].state.short_cir = TRUE;
+    }else{
+        act[0].state.short_cir = FALSE;
+        if (act[0].meas_value >= act[0].set_value){
+            PWM_duty = 0;
+        }else if ((act[0].meas_value >= act[0].set_value - HYSTERESIS) && (act[0].meas_value < act[0].set_value)){
+            PWM_duty = 30;
+        }else{
+            PWM_duty = 100;
+        }
+    }
+}
+
+static float ntc_tmpr_calc(float volt){
+    float result = 0.0f;
+    /* T = A*x^3 + B*x^2 + C*x + D */
+#define A   -4.6277f
+#define B   25.09f
+#define C   -70.672f
+#define D   83.718f
+    result = A*volt*volt*volt + B*volt*volt + C*volt + D;
+    return result;
 }
 
 
