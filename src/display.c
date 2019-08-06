@@ -46,12 +46,14 @@
 #include "dcts.h"
 //#include "usbd_cdc_if.h"
 #include "ssd1306.h"
+#include "buttons.h"
 #include "stm32f1xx_ll_gpio.h"
 extern IWDG_HandleTypeDef hiwdg;
 extern RTC_HandleTypeDef hrtc;
 static u8 display_time(void);
 void display_task( const void *parameters){
     (void) parameters;
+    static u8 display_on = TRUE;
     u32 tick=0;
     uint32_t last_wake_time = osKernelSysTick();
     taskENTER_CRITICAL();
@@ -61,6 +63,8 @@ void display_task( const void *parameters){
     SSD1306_UpdateScreen();
     taskEXIT_CRITICAL();
     while(1){
+
+
         char buff[32];
         if(SSD1306.error_num){
             SSD1306.Initialized = 0;
@@ -68,6 +72,29 @@ void display_task( const void *parameters){
         if((tick % 5) == 0){
             if(!SSD1306.Initialized ){
                 SSD1306_Init();
+            }
+        }
+
+        /* Buttons read */
+        if (pressed_time.up){
+            while(pressed_time.up){
+                osDelay(1);
+            }
+            act[0].set_value += 1.0f;
+        }
+        if (pressed_time.down){
+            while(pressed_time.down){
+                osDelay(1);
+            }
+            act[0].set_value -= 1.0f;
+        }
+        if (pressed_time.ok > 3000){
+            if(display_on){
+                SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);
+                SSD1306_UpdateScreen();
+                display_on = FALSE;
+            }else{
+                display_on = TRUE;
             }
         }
 
@@ -87,7 +114,9 @@ void display_task( const void *parameters){
 
         display_time();
 
-        SSD1306_UpdateScreen();
+        if(display_on){
+            SSD1306_UpdateScreen();
+        }
         //osDelay(500);
         HAL_IWDG_Refresh(&hiwdg);
         osDelayUntil(&last_wake_time, DISPLAY_TASK_PERIOD);

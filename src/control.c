@@ -50,6 +50,7 @@
 #include "stm32f1xx_ll_gpio.h"
 #include "dcts.h"
 #include "pin_map.h"
+#include "buttons.h"
 extern IWDG_HandleTypeDef hiwdg;
 uint8_t PWM_duty = 0;
 /* fb pid */
@@ -68,22 +69,22 @@ typedef struct __attribute__((packed)){
 } register_type;
 
 typedef struct {
-    register_type enable;				// bit 0 - Ручное, 1 - Автоматическое
-    register_type reverse_control;			// bit 1- реверсивное управление
+    register_type enable;           // bit 0 - Ручное, 1 - Автоматическое
+    register_type reverse_control;  // bit 1- реверсивное управление
     register_type rezet;			// bit 1- сброс накопленных параметров
-    register_type require_value; 		// float Уставка регулирования
-    register_type current_value;			// float Регулируемый параметр
+    register_type require_value;    // float Уставка регулирования
+    register_type current_value;    // float Регулируемый параметр
     register_type kp;		 		// float Коэффициент пропорциональности
     register_type ki;		  		// float Коэффициент времени интегрирования
     register_type kd;				// float Коэффициент времени интегрирования
     register_type position;	    	// float - необходимое положение регулятора в процентах
-    register_type gist_tube;	 		// float Зона нечувствительности в единицах измеряемого параметра
+    register_type gist_tube;        // float Зона нечувствительности в единицах измеряемого параметра
 } pid_in_t;
 
 typedef struct {
     register_type error_integral;		// float - накопленная ошибка интегратора
-    register_type prev_error_integral;			// float - предыдущее значение ошибки регулирования
-    register_type prev_control_integral;			// float - накопленное воздействия на регулирующий орган
+    register_type prev_error_integral;  // float - предыдущее значение ошибки регулирования
+    register_type prev_control_integral;// float - накопленное воздействия на регулирующий орган
     register_type enable_old;			// bit - для отслеживания первого такта включения
     register_type number_tick;			// uint32 - количество тактов после включения,для интервала работы
 } pid_var_t;
@@ -162,10 +163,13 @@ void control_task( const void *parameters){
         val = meas[4].value/0.01f;
         dcts_write_meas_value (1, val);
 
+        in.require_value.data.float32 = act[0].set_value;
+        in.current_value.data.float32 = act[0].meas_value;
         pid(&in,&var,&out);
         if(tick > TEMP_BUFF_SIZE){
             reg_on_control();
         }
+
         HAL_IWDG_Refresh(&hiwdg);
         osDelayUntil(&last_wake_time,CONTROL_TASK_PERIOD);
     }
