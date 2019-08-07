@@ -71,6 +71,10 @@ TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 UART_HandleTypeDef huart1;
 osThreadId defaultTaskHandle;
+osThreadId buttonsTaskHandle;
+osThreadId displayTaskHandle;
+osThreadId menuTaskHandle;
+osThreadId controlTaskHandle;
 
 
 /* Private function prototypes -----------------------------------------------*/
@@ -100,9 +104,9 @@ int main(void){
     MX_IWDG_Init();
     MX_RTC_Init();
     MX_ADC1_Init();
-    MX_USART1_UART_Init();
+    //MX_USART1_UART_Init();
     //MX_TIM3_Init();
-    MX_TIM2_Init();
+    //MX_TIM2_Init();
     dcts_init();
     HAL_ADC_Start(&hadc1);
     HAL_ADCEx_InjectedStart(&hadc1);
@@ -117,13 +121,16 @@ int main(void){
 */
 
     osThreadDef(control_task, control_task, osPriorityNormal, 0, 364);
-    defaultTaskHandle = osThreadCreate(osThread(control_task), NULL);
+    controlTaskHandle = osThreadCreate(osThread(control_task), NULL);
 
     osThreadDef(display_task, display_task, osPriorityNormal, 0, 364);
-    defaultTaskHandle = osThreadCreate(osThread(display_task), NULL);
+    displayTaskHandle = osThreadCreate(osThread(display_task), NULL);
 
-    osThreadDef(buttons_task, buttons_task, osPriorityNormal, 0, 364);
-    defaultTaskHandle = osThreadCreate(osThread(buttons_task), NULL);
+    osThreadDef(buttons_task, buttons_task, osPriorityNormal, 0, 128);
+    buttonsTaskHandle = osThreadCreate(osThread(buttons_task), NULL);
+
+    osThreadDef(menu_task, menu_task, osPriorityNormal, 0, 128);
+    menuTaskHandle = osThreadCreate(osThread(menu_task), NULL);
 
 #endif
 
