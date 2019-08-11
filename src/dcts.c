@@ -20,7 +20,7 @@ rtc_t rtc = {
 float pwr = 0;
 
 #define MEAS_NUM    5
-#define ACT_NUM 1
+#define ACT_NUM     1
 
 const uint8_t meas_num = MEAS_NUM;
 const uint8_t act_num = ACT_NUM;

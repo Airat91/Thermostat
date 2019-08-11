@@ -129,7 +129,7 @@ int main(void){
     osThreadDef(buttons_task, buttons_task, osPriorityNormal, 0, 128);
     buttonsTaskHandle = osThreadCreate(osThread(buttons_task), NULL);
 
-    osThreadDef(menu_task, menu_task, osPriorityNormal, 0, 128);
+    osThreadDef(menu_task, menu_task, osPriorityNormal, 0, 364);
     menuTaskHandle = osThreadCreate(osThread(menu_task), NULL);
 
 #endif
@@ -427,8 +427,8 @@ void default_task(void const * argument){
 
     HAL_IWDG_Refresh(&hiwdg);
     while(1){
-        HAL_RTC_GetTime(&hrtc,&time,RTC_FORMAT_BIN);
         HAL_RTC_GetDate(&hrtc,&date,RTC_FORMAT_BIN);
+        HAL_RTC_GetTime(&hrtc,&time,RTC_FORMAT_BIN);
 
         rtc.hour = time.Hours;
         rtc.minute = time.Minutes;
@@ -437,7 +437,7 @@ void default_task(void const * argument){
         rtc.day = date.Date;
         rtc.month = date.Month;
         rtc.year = date.Year + 2000;
-        rtc.weekday = date.WeekDay + 1;
+        rtc.weekday = date.WeekDay;
 
         HAL_IWDG_Refresh(&hiwdg);
         osDelayUntil(&last_wake_time, DEFAULT_TASK_PERIOD);
