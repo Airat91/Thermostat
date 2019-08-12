@@ -43,17 +43,21 @@
 #include "main.h"
 #include "display.h"
 #include "cmsis_os.h"
+#include "task.h"
+#include "FreeRTOS.h"
 #include "dcts.h"
 //#include "usbd_cdc_if.h"
 #include "ssd1306.h"
 #include "buttons.h"
 #include "stm32f1xx_ll_gpio.h"
+#include "control.h"
 
 extern IWDG_HandleTypeDef hiwdg;
 extern RTC_HandleTypeDef hrtc;
 extern osThreadId defaultTaskHandle;
 extern osThreadId displayTaskHandle;
 extern osThreadId menuTaskHandle;
+extern osThreadId buttonsTaskHandle;
 static u8 display_time(u8 y);
 static void clock_set(void);
 enum skin_t {
@@ -102,61 +106,53 @@ void display_task( const void *parameters){
 
         /* Buttons read */
         if (pressed_time.up){
-            while(pressed_time.up){
-                if(pressed_time.up > DISPLAY_TASK_PERIOD){
-                    pressed_time.up = 0;
-                    break;
-                }
-                osDelay(1);
+            if(act[0].set_value < MAX_SET_TEMP){
+                act[0].set_value += 1.0f;
+                HAL_PWR_EnableBkUpAccess();
+                BKP->DR2 = (uint32_t)act[0].set_value;
+                HAL_PWR_DisableBkUpAccess();
             }
-            act[0].set_value += 1.0f;
         }
         if (pressed_time.down){
-            while(pressed_time.down){
-                if(pressed_time.down > DISPLAY_TASK_PERIOD){
-                    pressed_time.down = 0;
-                    break;
-                }
-                osDelay(1);
+            if(act[0].set_value > MIN_SET_TEMP){
+                act[0].set_value -= 1.0f;
+                HAL_PWR_EnableBkUpAccess();
+                BKP->DR2 = (uint32_t)act[0].set_value;
+                HAL_PWR_DisableBkUpAccess();
             }
-            act[0].set_value -= 1.0f;
         }
         if (pressed_time.left){
-            while(pressed_time.left){
-                if(pressed_time.left > DISPLAY_TASK_PERIOD*2){
-                    pressed_time.left = 0;
-                    break;
-                }
-                osDelay(1);
-            }
-            skin--;
-            if(skin == 0xFF){
+            if(skin == 0){
                 skin = SKIN_END_OF_LIST - 1;
+            }else{
+                skin--;
             }
             SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
             SSD1306_UpdateScreen();
         }
         if (pressed_time.right){
-            while(pressed_time.right){
-                if(pressed_time.right > DISPLAY_TASK_PERIOD*2){
-                    pressed_time.right = 0;
-                    break;
-                }
-                osDelay(1);
-            }
-            skin++;
-            if(skin == SKIN_END_OF_LIST){
+            if(skin == SKIN_END_OF_LIST - 1){
                 skin = SKIN_FULL;
+            }else{
+                skin++;
             }
             SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
             SSD1306_UpdateScreen();
         }
-        if (pressed_time.ok > 3000){
-            pressed_time.ok = 0;
+        if (pressed_time.ok){
             SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
             SSD1306_UpdateScreen();
+            vTaskSuspend(buttonsTaskHandle);
+            pressed_time.ok = 0;
             vTaskResume(menuTaskHandle);
             vTaskSuspend(NULL);
+        }
+        if (pressed_time.up && pressed_time.down){
+            if(act[0].state.control == TRUE){
+                act[0].state.control = FALSE;
+            }else if(act[0].state.control == FALSE){
+                act[0].state.control = TRUE;
+            }
         }
 
         /* Print main screen */
@@ -166,7 +162,11 @@ void display_task( const void *parameters){
             SSD1306_GotoXY(0, 14);
             SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
 
-            sprintf(buff,"Уст %2.0f%s", (double)act[0].set_value, act[0].unit);
+            if(act[0].state.control == TRUE){
+                sprintf(buff,"Уст %2.0f%s", (double)act[0].set_value, act[0].unit);
+            }else{
+                sprintf(buff,"Выключен");
+            }
             SSD1306_GotoXY(70, 16);
             SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
@@ -182,7 +182,11 @@ void display_task( const void *parameters){
             SSD1306_GotoXY(0, 14);
             SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
 
-            sprintf(buff,"Уст %2.0f%s", (double)act[0].set_value, act[0].unit);
+            if(act[0].state.control == TRUE){
+                sprintf(buff,"Уст %2.0f%s", (double)act[0].set_value, act[0].unit);
+            }else {
+                sprintf(buff,"Выключен");
+            }
             SSD1306_GotoXY(70, 16);
             SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
@@ -192,7 +196,11 @@ void display_task( const void *parameters){
             SSD1306_GotoXY(0, 14);
             SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
 
-            sprintf(buff,"Уст %2.0f%s", (double)act[0].set_value, act[0].unit);
+            if(act[0].state.control == TRUE){
+                sprintf(buff,"Уст %2.0f%s", (double)act[0].set_value, act[0].unit);
+            }else {
+                sprintf(buff,"Выключен");
+            }
             SSD1306_GotoXY(70, 16);
             SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
@@ -204,6 +212,10 @@ void display_task( const void *parameters){
         SSD1306_UpdateScreen();
         HAL_IWDG_Refresh(&hiwdg);
         osDelayUntil(&last_wake_time, DISPLAY_TASK_PERIOD);
+        if(eTaskGetState(buttonsTaskHandle) == eSuspended){
+            vTaskDelay(DISPLAY_TASK_PERIOD);
+            vTaskResume(buttonsTaskHandle);
+        }
     }
 }
 u8 display_time(u8 y){
@@ -269,13 +281,30 @@ void menu_task( const void *parameters){
 
         /* Read buttons */
         if (pressed_time.left){
-            while(pressed_time.left){
-                if(pressed_time.left > DISPLAY_TASK_PERIOD*2){
-                    pressed_time.left = 0;
-                    break;
-                }
-                osDelay(1);
+            SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
+            SSD1306_UpdateScreen();
+            vTaskSuspend(buttonsTaskHandle);
+            pressed_time.left = 0;
+            vTaskResume(displayTaskHandle);
+            vTaskSuspend(NULL);
+        }
+        if (pressed_time.right || pressed_time.ok){
+            if(menu.level < MENU_LEVEL_NUM){
+                menu.level++;
+                SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
+                SSD1306_UpdateScreen();
             }
+        }
+        if (pressed_time.down){
+            if(menu.page[menu.level] == menu_max_page[menu.level]){
+                menu.page[menu.level] = 0;
+            }else{
+                menu.page[menu.level]++;
+            }
+            SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
+            SSD1306_UpdateScreen();
+        }
+        if (pressed_time.up){
             if(menu.page[menu.level] == 0){
                 menu.page[menu.level] = menu_max_page[menu.level] - 1;
             }else{
@@ -284,77 +313,62 @@ void menu_task( const void *parameters){
             SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
             SSD1306_UpdateScreen();
         }
-        if (pressed_time.right){
-            while(pressed_time.right){
-                if(pressed_time.right > DISPLAY_TASK_PERIOD*2){
-                    pressed_time.right = 0;
-                    break;
-                }
-                osDelay(1);
-            }
-            menu.page[menu.level]++;
-            if(menu.page[menu.level] == menu_max_page[menu.level]){
-                menu.page[menu.level] = 0;
-            }
-            SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
-            SSD1306_UpdateScreen();
-        }
-        if (pressed_time.down){
-            while(pressed_time.down){
-                if(pressed_time.down > DISPLAY_TASK_PERIOD*2){
-                    pressed_time.down = 0;
-                    break;
-                }
-                osDelay(1);
-            }
-            if(menu.level < MENU_LEVEL_NUM){
-                menu.level++;
-                SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
-                SSD1306_UpdateScreen();
-            }
-        }
-        if (pressed_time.up){
-            while(pressed_time.up){
-                if(pressed_time.up > DISPLAY_TASK_PERIOD*2){
-                    pressed_time.up = 0;
-                    break;
-                }
-                osDelay(1);
-            }
-            if(menu.level > 0){
-                menu.level--;
-                SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
-                SSD1306_UpdateScreen();
-            }
-        }
-        if (pressed_time.ok > 3000){
-            pressed_time.ok = 0;
-            SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
-            SSD1306_UpdateScreen();
-            vTaskResume(displayTaskHandle);
-            vTaskSuspend(NULL);
-        }
 
-        if(menu.page[0] == PAGE_CLOCK){
-            SSD1306_GotoXY(5, 0);
-            SSD1306_Puts("Установка времени", &Font_7x10, SSD1306_COLOR_WHITE);
-            if(menu.level == 1){
-                clock_set();
+        /* Print menu */
+        if(menu.level == 0){
+            SSD1306_GotoXY(50, 0);
+            SSD1306_Puts("МЕНЮ", &Font_7x10, SSD1306_COLOR_WHITE);
+            if(menu.page[menu.level] <= PAGE_STATISTIC){
+                SSD1306_GotoXY(8, 11);
+                SSD1306_Puts("Дата и время", &Font_7x10, SSD1306_COLOR_WHITE);
+                SSD1306_GotoXY(8, 22);
+                SSD1306_Puts("Гистерезис", &Font_7x10, SSD1306_COLOR_WHITE);
+                SSD1306_GotoXY(8, 33);
+                SSD1306_Puts("Режим работы", &Font_7x10, SSD1306_COLOR_WHITE);
+                SSD1306_GotoXY(8, 44);
+                SSD1306_Puts("Статистика", &Font_7x10, SSD1306_COLOR_WHITE);
+            }else if(menu.page[menu.level] > PAGE_STATISTIC && menu.page[menu.level] <= PAGE_END_OF_LIST){
+                // print list
             }
-        }else if(menu.page[0] == PAGE_HYSTERESIS){
-            SSD1306_GotoXY(29, 0);
-            SSD1306_Puts("Гистерезис", &Font_7x10, SSD1306_COLOR_WHITE);
-        }else if(menu.page[0] == PAGE_PROGRAMM){
-            SSD1306_GotoXY(22, 0);
-            SSD1306_Puts("Выбор режима", &Font_7x10, SSD1306_COLOR_WHITE);
-        }else if(menu.page[0] == PAGE_STATISTIC){
-            SSD1306_GotoXY(29, 0);
-            SSD1306_Puts("Статистика", &Font_7x10, SSD1306_COLOR_WHITE);
+
+            /* Print cursor */
+            SSD1306_GotoXY(0, 11 + 11 * (menu.page[menu.level] % 4));
+            SSD1306_Puts(">", &Font_7x10, SSD1306_COLOR_WHITE);
+
+        }else if(menu.level == 1){
+            if(menu.page[menu.level - 1] == PAGE_CLOCK){
+                vTaskSuspend(buttonsTaskHandle);
+                pressed_time.ok = 0;
+                pressed_time.right = 0;
+                clock_set();
+            }else if(menu.page[menu.level - 1] == PAGE_HYSTERESIS){
+                // hysteresis_set();
+                SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
+                SSD1306_UpdateScreen();
+                vTaskResume(displayTaskHandle);
+                vTaskSuspend(NULL);
+            }else if(menu.page[menu.level - 1] == PAGE_PROGRAMM){
+                // programm_set();
+                SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
+                SSD1306_UpdateScreen();
+                vTaskResume(displayTaskHandle);
+                vTaskSuspend(NULL);
+            }else if(menu.page[menu.level - 1] == PAGE_STATISTIC){
+                // statistic_info();
+                SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
+                SSD1306_UpdateScreen();
+                vTaskResume(displayTaskHandle);
+                vTaskSuspend(NULL);
+            }
         }
 
         SSD1306_UpdateScreen();
         HAL_IWDG_Refresh(&hiwdg);
         osDelayUntil(&last_wake_time, DISPLAY_TASK_PERIOD);
+        if(eTaskGetState(buttonsTaskHandle) == eSuspended){
+            vTaskDelay(DISPLAY_TASK_PERIOD);
+            vTaskResume(buttonsTaskHandle);
+        }
     }
 
 }
@@ -378,13 +392,6 @@ static void clock_set(void){
     while(1){
         /* Read buttons */
         if (pressed_time.left){
-            while(pressed_time.left){
-                if(pressed_time.left > DISPLAY_TASK_PERIOD*2){
-                    pressed_time.left = 0;
-                    break;
-                }
-                osDelay(1);
-            }
             if(position == 0){
                 position = 12;
             }else{
@@ -394,13 +401,6 @@ static void clock_set(void){
             SSD1306_UpdateScreen();
         }
         if (pressed_time.right){
-            while(pressed_time.right){
-                if(pressed_time.right > DISPLAY_TASK_PERIOD*2){
-                    pressed_time.right = 0;
-                    break;
-                }
-                osDelay(1);
-            }
             if(position == 13){
                 position = 0;
             }else{
@@ -410,13 +410,6 @@ static void clock_set(void){
             SSD1306_UpdateScreen();
         }
         if (pressed_time.down){
-            while(pressed_time.down){
-                if(pressed_time.down > DISPLAY_TASK_PERIOD*2){
-                    pressed_time.down = 0;
-                    break;
-                }
-                osDelay(1);
-            }
             switch (position) {
             case 0:
                 if(rtc.day < 10){
@@ -514,13 +507,6 @@ static void clock_set(void){
             SSD1306_UpdateScreen();
         }
         if (pressed_time.up){
-            while(pressed_time.up){
-                if(pressed_time.up > DISPLAY_TASK_PERIOD*2){
-                    pressed_time.up = 0;
-                    break;
-                }
-                osDelay(1);
-            }
             switch (position) {
             case 0:
                 rtc.day += 10;
@@ -605,13 +591,6 @@ static void clock_set(void){
             SSD1306_UpdateScreen();
         }
         if (pressed_time.ok){
-            while(pressed_time.ok){
-                if(pressed_time.ok > DISPLAY_TASK_PERIOD*2){
-                    pressed_time.ok = 0;
-                    break;
-                }
-                osDelay(1);
-            }
             SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
             SSD1306_UpdateScreen();
             break;
@@ -619,6 +598,8 @@ static void clock_set(void){
 
         /* print values on screen */
 
+        SSD1306_GotoXY(22, 0);
+        SSD1306_Puts("Дата и время", &Font_7x10,SSD1306_COLOR_WHITE);
         display_time(20);
         switch (position){
         case 0:
@@ -667,6 +648,10 @@ static void clock_set(void){
         SSD1306_UpdateScreen();
         HAL_IWDG_Refresh(&hiwdg);
         osDelayUntil(&last_wake_time, DISPLAY_TASK_PERIOD);
+        if(eTaskGetState(buttonsTaskHandle) == eSuspended){
+            vTaskDelay(DISPLAY_TASK_PERIOD);
+            vTaskResume(buttonsTaskHandle);
+        }
     }
     /* save new time and data */
     time.Hours = rtc.hour;
@@ -683,7 +668,6 @@ static void clock_set(void){
     menu.level--;
 
     vTaskResume(defaultTaskHandle);
-    //vTaskResume(menuTaskHandle);
 }
 
 #endif //DISPLAY_C

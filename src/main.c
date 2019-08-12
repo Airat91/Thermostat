@@ -102,12 +102,12 @@ int main(void){
     SystemClock_Config();
     MX_GPIO_Init();
     MX_IWDG_Init();
+    dcts_init();
     MX_RTC_Init();
     MX_ADC1_Init();
     //MX_USART1_UART_Init();
     //MX_TIM3_Init();
     //MX_TIM2_Init();
-    dcts_init();
     HAL_ADC_Start(&hadc1);
     HAL_ADCEx_InjectedStart(&hadc1);
     osThreadDef(own_task, default_task, osPriorityNormal, 0, 364);
@@ -123,7 +123,7 @@ int main(void){
     osThreadDef(control_task, control_task, osPriorityNormal, 0, 364);
     controlTaskHandle = osThreadCreate(osThread(control_task), NULL);
 
-    osThreadDef(display_task, display_task, osPriorityNormal, 0, 364);
+    osThreadDef(display_task, display_task, osPriorityNormal, 0, 512);
     displayTaskHandle = osThreadCreate(osThread(display_task), NULL);
 
     osThreadDef(buttons_task, buttons_task, osPriorityNormal, 0, 128);
@@ -270,30 +270,53 @@ static void MX_IWDG_Init(void)
 
 /* RTC init function */
 static void MX_RTC_Init(void){
-    RTC_TimeTypeDef sTime;
+    RTC_TimeTypeDef sTime = {0};
+    RTC_DateTypeDef sDate = {0};
     __HAL_RCC_BKP_CLK_ENABLE();
     __HAL_RCC_PWR_CLK_ENABLE();
-    HAL_PWR_EnableBkUpAccess();
     __HAL_RCC_RTC_ENABLE();
     hrtc.Instance = RTC;
     hrtc.Init.AsynchPrediv = RTC_AUTO_1_SECOND;
     if (HAL_RTC_Init(&hrtc) != HAL_OK) {
         _Error_Handler(__FILE__, __LINE__);
     }
-    HAL_RTC_GetTime(&hrtc,&sTime,RTC_FORMAT_BIN);
+
+    HAL_PWR_EnableBkUpAccess();
     u32 data;
     const  u32 data_c = 0x1234;
     data = BKP->DR1;
-    if(data!=data_c){
+    if(data!=data_c){   // set default values
         BKP->DR1 = data_c;
-        sTime.Hours = 0x09;
-        sTime.Minutes = 0x01;
-        sTime.Seconds = 0x01;
-        if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK) {
-            _Error_Handler(__FILE__, __LINE__);
-        }
+
+        sTime.Hours = rtc.hour;
+        sTime.Minutes = rtc.minute;
+        sTime.Seconds = rtc.second;
+
+        sDate.Date = rtc.day;
+        sDate.Month = rtc.month;
+        sDate.Year = (uint8_t)(rtc.year - 2000);
+
+        HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD);
+        HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+
+        BKP->DR2 = (uint32_t)act[0].set_value;
+
+    }else{  // read data from bkpram
+        HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+        HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+
+        rtc.hour = sTime.Hours;
+        rtc.minute = sTime.Minutes;
+        rtc.second = sTime.Seconds;
+
+        rtc.day = sDate.Date;
+        rtc.month = sDate.Month;
+        rtc.year = sDate.Year + 2000;
+        rtc.weekday = sDate.WeekDay;
+
+        act[0].set_value = (float)(BKP->DR2);
     }
-    data = BKP->DR1;
+    HAL_PWR_DisableBkUpAccess();
 }
 
 /* TIM3 init function */

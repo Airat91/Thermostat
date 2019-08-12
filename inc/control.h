@@ -55,6 +55,8 @@ void control_task( const void *parameters);
 #define MAX_PWM_VALUE 32768
 #define CONTROL_TASK_PERIOD 100
 #define MAX_REG_TEMP 100.0f
+#define MAX_SET_TEMP 40.0f
+#define MIN_SET_TEMP 5.0f
 #define HYSTERESIS 0.5f
 #define TEMP_BUFF_SIZE  10
 /*add functions and variable declarations before */

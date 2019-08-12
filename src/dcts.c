@@ -50,7 +50,7 @@ void dcts_init () {
 
     strcpy (act[0].name, "Floor");
     strcpy (act[0].unit, "°C");
-    act[0].set_value = 35.0f;
+    act[0].set_value = 27.0f;
     act[0].meas_value = 0.0f;
     act[0].state.control = TRUE;
     act[0].state.pin_state = FALSE;
