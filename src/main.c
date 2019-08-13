@@ -299,8 +299,18 @@ static void MX_RTC_Init(void){
         HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD);
         HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
 
+        data = (uint32_t)(act[0].set_value) & 0xFFFF;
         BKP->DR2 = (uint32_t)act[0].set_value;
+        BKP->DR3 = (uint32_t)act[0].state.control;
 
+        data = (uint32_t)sensor_state.dispersion;
+        BKP->DR4 = (uint32_t)sensor_state.dispersion;
+        data = (uint32_t)sensor_state.hysteresis;
+        BKP->DR5 = (uint32_t)sensor_state.hysteresis;
+        data = (uint32_t)(sensor_state.error | (sensor_state.buff_size << 8));
+        BKP->DR6 = data;
+
+        BKP->DR7 = (uint32_t)semistor_state.max_tmpr;
     }else{  // read data from bkpram
         HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
         HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
@@ -314,7 +324,18 @@ static void MX_RTC_Init(void){
         rtc.year = sDate.Year + 2000;
         rtc.weekday = sDate.WeekDay;
 
+        data = BKP->DR2;
         act[0].set_value = (float)(BKP->DR2);
+        act[0].state.control = (u8)(BKP->DR3);
+
+        sensor_state.dispersion = (float)(BKP->DR4);
+        data = BKP->DR5;
+        sensor_state.hysteresis = (float)(BKP->DR5);
+        data = BKP->DR6;
+        sensor_state.error = (u8)(data & 0xFF);
+        sensor_state.buff_size = (u8)((data & 0xFF00) >> 8);
+
+        semistor_state.max_tmpr = (float)(BKP->DR7);
     }
     HAL_PWR_DisableBkUpAccess();
 }

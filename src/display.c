@@ -60,6 +60,7 @@ extern osThreadId menuTaskHandle;
 extern osThreadId buttonsTaskHandle;
 static u8 display_time(u8 y);
 static void clock_set(void);
+static void max_reg_temp_set(void);
 enum skin_t {
     SKIN_FULL = 0,
     SKIN_1,
@@ -72,6 +73,7 @@ enum menu_page_t {
     PAGE_HYSTERESIS,
     PAGE_PROGRAMM,
     PAGE_STATISTIC,
+    PAGE_MAX_TEMP_REG,
     PAGE_END_OF_LIST,
 };
 #define MENU_LEVEL_NUM 2
@@ -153,14 +155,36 @@ void display_task( const void *parameters){
             }else if(act[0].state.control == FALSE){
                 act[0].state.control = TRUE;
             }
+
+            HAL_PWR_EnableBkUpAccess();
+            BKP->DR3 = (uint32_t)act[0].state.control;
+            HAL_PWR_DisableBkUpAccess();
         }
 
         /* Print main screen */
         if(skin == SKIN_FULL){  // Full information
 
-            sprintf(buff,"%2.1f", (double)act[0].meas_value);
-            SSD1306_GotoXY(0, 14);
-            SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
+            if(sensor_state.error == SENSOR_OK){
+                sprintf(buff,"%2.1f", (double)act[0].meas_value);
+                SSD1306_GotoXY(0, 14);
+                SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
+            }else if(sensor_state.error == SENSOR_BREAK){
+                SSD1306_DrawFilledRectangle(0,14,64,26,SSD1306_COLOR_BLACK);    // clear area
+                sprintf(buff,"Œ¡–€¬");
+                SSD1306_GotoXY(15, 15);
+                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+                sprintf(buff,"ƒ¿“◊» ¿");
+                SSD1306_GotoXY(7, 29);
+                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+            }else if(sensor_state.error == SENSOR_SHORT){
+                SSD1306_DrawFilledRectangle(0,14,64,26,SSD1306_COLOR_BLACK);    // clear area
+                sprintf(buff,"«¿Ã€ ¿Õ»≈");
+                SSD1306_GotoXY(0, 15);
+                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+                sprintf(buff,"ƒ¿“◊» ¿");
+                SSD1306_GotoXY(7, 29);
+                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+            }
 
             if(act[0].state.control == TRUE){
                 sprintf(buff,"”ÒÚ %2.0f%s", (double)act[0].set_value, act[0].unit);
@@ -178,9 +202,27 @@ void display_task( const void *parameters){
 
         }else if(skin == SKIN_1){    // Only current and required temperature
 
-            sprintf(buff,"%2.1f", (double)act[0].meas_value);
-            SSD1306_GotoXY(0, 14);
-            SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
+            if(sensor_state.error == SENSOR_OK){
+                sprintf(buff,"%2.1f", (double)act[0].meas_value);
+                SSD1306_GotoXY(0, 14);
+                SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
+            }else if(sensor_state.error == SENSOR_BREAK){
+                SSD1306_DrawFilledRectangle(0,14,64,26,SSD1306_COLOR_BLACK);    // clear area
+                sprintf(buff,"Œ¡–€¬");
+                SSD1306_GotoXY(15, 15);
+                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+                sprintf(buff,"ƒ¿“◊» ¿");
+                SSD1306_GotoXY(7, 29);
+                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+            }else if(sensor_state.error == SENSOR_SHORT){
+                SSD1306_DrawFilledRectangle(0,14,64,26,SSD1306_COLOR_BLACK);    // clear area
+                sprintf(buff,"«¿Ã€ ¿Õ»≈");
+                SSD1306_GotoXY(0, 15);
+                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+                sprintf(buff,"ƒ¿“◊» ¿");
+                SSD1306_GotoXY(7, 29);
+                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+            }
 
             if(act[0].state.control == TRUE){
                 sprintf(buff,"”ÒÚ %2.0f%s", (double)act[0].set_value, act[0].unit);
@@ -192,9 +234,27 @@ void display_task( const void *parameters){
 
         }else if(skin == SKIN_2){    // Current and required temperature and clock
 
-            sprintf(buff,"%2.1f", (double)act[0].meas_value);
-            SSD1306_GotoXY(0, 14);
-            SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
+            if(sensor_state.error == SENSOR_OK){
+                sprintf(buff,"%2.1f", (double)act[0].meas_value);
+                SSD1306_GotoXY(0, 14);
+                SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
+            }else if(sensor_state.error == SENSOR_BREAK){
+                SSD1306_DrawFilledRectangle(0,14,64,26,SSD1306_COLOR_BLACK);    // clear area
+                sprintf(buff,"Œ¡–€¬");
+                SSD1306_GotoXY(15, 15);
+                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+                sprintf(buff,"ƒ¿“◊» ¿");
+                SSD1306_GotoXY(7, 29);
+                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+            }else if(sensor_state.error == SENSOR_SHORT){
+                SSD1306_DrawFilledRectangle(0,14,64,26,SSD1306_COLOR_BLACK);    // clear area
+                sprintf(buff,"«¿Ã€ ¿Õ»≈");
+                SSD1306_GotoXY(0, 15);
+                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+                sprintf(buff,"ƒ¿“◊» ¿");
+                SSD1306_GotoXY(7, 29);
+                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+            }
 
             if(act[0].state.control == TRUE){
                 sprintf(buff,"”ÒÚ %2.0f%s", (double)act[0].set_value, act[0].unit);
@@ -319,20 +379,21 @@ void menu_task( const void *parameters){
             SSD1306_GotoXY(50, 0);
             SSD1306_Puts("Ã≈Õﬁ", &Font_7x10, SSD1306_COLOR_WHITE);
             if(menu.page[menu.level] <= PAGE_STATISTIC){
-                SSD1306_GotoXY(8, 11);
+                SSD1306_GotoXY(8, 16);
                 SSD1306_Puts("ƒ‡Ú‡ Ë ‚ÂÏˇ", &Font_7x10, SSD1306_COLOR_WHITE);
-                SSD1306_GotoXY(8, 22);
+                SSD1306_GotoXY(8, 27);
                 SSD1306_Puts("√ËÒÚÂÂÁËÒ", &Font_7x10, SSD1306_COLOR_WHITE);
-                SSD1306_GotoXY(8, 33);
+                SSD1306_GotoXY(8, 38);
                 SSD1306_Puts("–ÂÊËÏ ‡·ÓÚ˚", &Font_7x10, SSD1306_COLOR_WHITE);
-                SSD1306_GotoXY(8, 44);
+                SSD1306_GotoXY(8, 49);
                 SSD1306_Puts("—Ú‡ÚËÒÚËÍ‡", &Font_7x10, SSD1306_COLOR_WHITE);
             }else if(menu.page[menu.level] > PAGE_STATISTIC && menu.page[menu.level] <= PAGE_END_OF_LIST){
-                // print list
+                SSD1306_GotoXY(8, 16);
+                SSD1306_Puts("Ã‡ÍÒ. “ Â„-‡", &Font_7x10, SSD1306_COLOR_WHITE);
             }
 
             /* Print cursor */
-            SSD1306_GotoXY(0, 11 + 11 * (menu.page[menu.level] % 4));
+            SSD1306_GotoXY(0, 16 + 11 * (menu.page[menu.level] % 4));
             SSD1306_Puts(">", &Font_7x10, SSD1306_COLOR_WHITE);
 
         }else if(menu.level == 1){
@@ -355,6 +416,12 @@ void menu_task( const void *parameters){
                 vTaskSuspend(NULL);
             }else if(menu.page[menu.level - 1] == PAGE_STATISTIC){
                 // statistic_info();
+                SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
+                SSD1306_UpdateScreen();
+                vTaskResume(displayTaskHandle);
+                vTaskSuspend(NULL);
+            }else if(menu.page[menu.level - 1] == PAGE_MAX_TEMP_REG){
+                max_reg_temp_set();
                 SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
                 SSD1306_UpdateScreen();
                 vTaskResume(displayTaskHandle);
@@ -385,8 +452,8 @@ static void clock_set(void){
     RTC_TimeTypeDef time;
     RTC_DateTypeDef date;
     uint32_t last_wake_time = osKernelSysTick();
-    //vTaskSuspend(menuTaskHandle);
     vTaskSuspend(defaultTaskHandle);
+    SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
     u8 position = 0;
     u8 x = 0;
     while(1){
@@ -668,6 +735,59 @@ static void clock_set(void){
     menu.level--;
 
     vTaskResume(defaultTaskHandle);
+}
+
+#define REG_MAX_TMPR    150
+#define REG_MIN_TMPR    10
+static void max_reg_temp_set(void){
+    char buff[7] = {0};
+    uint32_t last_wake_time = osKernelSysTick();
+    SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
+    SSD1306_GotoXY(22,0);
+    SSD1306_Puts("Ã‡ÍÒËÏ‡Î¸Ì‡ˇ", &Font_7x10, SSD1306_COLOR_WHITE);
+    SSD1306_GotoXY(25,12);
+    SSD1306_Puts("ÚÂÏÔÂ‡ÚÛ‡", &Font_7x10, SSD1306_COLOR_WHITE);
+    SSD1306_GotoXY(29, 24);
+    SSD1306_Puts("ÒËÏÏËÒÚÓ‡", &Font_7x10, SSD1306_COLOR_WHITE);
+    while(1){
+        /* Read buttons */
+        if (pressed_time.ok){
+            SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
+            SSD1306_UpdateScreen();
+            break;
+        }
+        if(pressed_time.up){
+            if(semistor_state.max_tmpr > REG_MAX_TMPR){
+                semistor_state.max_tmpr = REG_MAX_TMPR;
+            }else{
+                semistor_state.max_tmpr++;
+            }
+        }
+        if(pressed_time.down){
+            if(semistor_state.max_tmpr < REG_MIN_TMPR){
+                semistor_state.max_tmpr = REG_MIN_TMPR;
+            }else{
+                semistor_state.max_tmpr--;
+            }
+        }
+
+        /* Print screen */
+        SSD1306_GotoXY(46, 46);
+        sprintf(buff, "%3.0f∞C", (double)semistor_state.max_tmpr);
+        SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+
+        SSD1306_UpdateScreen();
+        HAL_IWDG_Refresh(&hiwdg);
+        osDelayUntil(&last_wake_time, DISPLAY_TASK_PERIOD);
+        if(eTaskGetState(buttonsTaskHandle) == eSuspended){
+            vTaskDelay(DISPLAY_TASK_PERIOD);
+            vTaskResume(buttonsTaskHandle);
+        }
+    }
+
+    HAL_PWR_EnableBkUpAccess();
+    BKP->DR7 = (uint32_t)semistor_state.max_tmpr;
+    HAL_PWR_DisableBkUpAccess();
 }
 
 #endif //DISPLAY_C

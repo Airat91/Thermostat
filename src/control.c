@@ -95,6 +95,18 @@ typedef struct {
     register_type test;				// float
 } pid_out_t;
 
+sensor_t sensor_state = {
+    SENSOR_OK,
+    10,
+    HYSTERESIS,
+    DISPERSION
+};
+semistor_t semistor_state = {
+    FALSE,
+    0,
+    MAX_REG_TEMP
+};
+
 void pid(pid_in_t * inputs,pid_var_t * vars,\
                   pid_out_t * outputs);
 static void reg_on_control(void);
@@ -112,7 +124,7 @@ void control_task( const void *parameters){
     pid_var_t var;
     pid_out_t out;
     float val;
-    float temp_buf[TEMP_BUFF_SIZE] = {0};
+    float temp_buf[TEMP_MAX_BUFF_SIZE] = {0};
     var.prev_error_integral.data.float32 = 0.0;
     var.error_integral.data.float32  = 0.0;
     var.number_tick.data.uint32=0.0;
@@ -129,7 +141,6 @@ void control_task( const void *parameters){
     uint32_t last_wake_time = osKernelSysTick();
     while(1){
         u8 sensor_data_valid;
-        tick++;
         sensor_data_valid = 0;
 
         u32 value[3];
@@ -140,6 +151,13 @@ void control_task( const void *parameters){
         /* ADC0 */
         val = ((float)value[0]/value[2])*1.2f;
         dcts_write_meas_value (3, val);
+        if(val < SENSOR_MIN_VOLTAGE){
+            sensor_state.error = SENSOR_SHORT;
+        }else if(val > SENSOR_MAX_VOLTAGE){
+            sensor_state.error = SENSOR_BREAK;
+        }else{
+            sensor_state.error = SENSOR_OK;
+        }
 
         /* ADC1 */
         val = ((float)value[1]/value[2])*1.2f;
@@ -147,26 +165,34 @@ void control_task( const void *parameters){
 
         /* Floor T */
         val = ntc_tmpr_calc(meas[3].value);
-        if(val > 0){
-            temp_buf[tick%TEMP_BUFF_SIZE] = val;
+        if(tick < sensor_state.buff_size){
+            temp_buf[tick] = val;
+            tick++;
             val = 0.0f;
-            for(u8 i = 0; i < TEMP_BUFF_SIZE; i++){
+            for(u8 i = 0; i < sensor_state.buff_size; i++){
                 val += temp_buf[i];
             }
-            val = val/TEMP_BUFF_SIZE;
+            val = val/sensor_state.buff_size;
             dcts_write_act_meas_value (0, val);
-        }else{
-            dcts_write_act_meas_value (0, 99.9f);
+        }else if((val >= act[0].meas_value - sensor_state.dispersion) && (val <= act[0].meas_value + sensor_state.dispersion)){
+            temp_buf[tick%sensor_state.buff_size] = val;
+            tick++;
+            val = 0.0f;
+            for(u8 i = 0; i < sensor_state.buff_size; i++){
+                val += temp_buf[i];
+            }
+            val = val/sensor_state.buff_size;
+            dcts_write_act_meas_value (0, val);
         }
 
         /* Reg T */
         val = meas[4].value/0.01f;
         dcts_write_meas_value (1, val);
 
-        in.require_value.data.float32 = act[0].set_value;
+        /*in.require_value.data.float32 = act[0].set_value;
         in.current_value.data.float32 = act[0].meas_value;
-        pid(&in,&var,&out);
-        if(tick > TEMP_BUFF_SIZE){
+        pid(&in,&var,&out);*/
+        if(tick > sensor_state.buff_size){
             reg_on_control();
         }
 
@@ -237,18 +263,25 @@ void pid(pid_in_t * FBInputs,pid_var_t * FBVars,\
     OUT->output.data.float32 = VAR->prev_control_integral.data.float32 ;
 }
 static void reg_on_control(void){
-    if (meas[1].value > MAX_REG_TEMP){  // overheating
+    static u8 last_overheat = FALSE;
+    if (meas[1].value > semistor_state.max_tmpr){  // overheating
         act[0].state.short_cir = TRUE;
+        semistor_state.overheat = TRUE;
+        if(last_overheat == FALSE){
+            semistor_state.overheat_cnt++;
+        }
     }else{
         act[0].state.short_cir = FALSE;
+        semistor_state.overheat = FALSE;
         if (act[0].meas_value >= act[0].set_value){
             PWM_duty = 0;
-        }else if ((act[0].meas_value >= act[0].set_value - HYSTERESIS) && (act[0].meas_value < act[0].set_value)){
+        }else if ((act[0].meas_value >= act[0].set_value - sensor_state.hysteresis) && (act[0].meas_value < act[0].set_value)){
             PWM_duty = 30;
         }else{
             PWM_duty = 100;
         }
     }
+    last_overheat = semistor_state.overheat;
 }
 
 static float ntc_tmpr_calc(float volt){
