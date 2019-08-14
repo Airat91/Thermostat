@@ -49,18 +49,24 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f1xx_hal.h"
+#include "stdlib.h"
 #include "cmsis_os.h"
-#include "ds18.h"
+//#include "ds18.h"
 #include "control.h"
 #include "display.h"
 #include "stm32f1xx_ll_gpio.h"
-#include "step.h"
+//#include "step.h"
 #include "dcts.h"
 #include "pin_map.h"
 #include "buttons.h"
 
 #define FEEDER 0
 #define DEFAULT_TASK_PERIOD 100
+
+typedef enum{
+    READ_FLOAT_SIGNED = 0,
+    READ_FLOAT_UNSIGNED,
+}read_float_bkp_sign_t;
 
 
 /* Private variables ---------------------------------------------------------*/
@@ -87,6 +93,10 @@ static void MX_USART1_UART_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 void default_task(void const * argument);
+static void save_to_bkp(u8 bkp_num, u8 var);
+static void save_float_to_bkp(u8 bkp_num, float var);
+static u8 read_bkp(u8 bkp_num);
+static float read_float_bkp(u8 bkp_num, u8 sign);
 
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
@@ -281,12 +291,13 @@ static void MX_RTC_Init(void){
         _Error_Handler(__FILE__, __LINE__);
     }
 
-    HAL_PWR_EnableBkUpAccess();
     u32 data;
     const  u32 data_c = 0x1234;
     data = BKP->DR1;
     if(data!=data_c){   // set default values
+        HAL_PWR_EnableBkUpAccess();
         BKP->DR1 = data_c;
+        HAL_PWR_DisableBkUpAccess();
 
         sTime.Hours = rtc.hour;
         sTime.Minutes = rtc.minute;
@@ -299,18 +310,15 @@ static void MX_RTC_Init(void){
         HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD);
         HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
 
-        data = (uint32_t)(act[0].set_value) & 0xFFFF;
-        BKP->DR2 = (uint32_t)act[0].set_value;
-        BKP->DR3 = (uint32_t)act[0].state.control;
+        save_float_to_bkp(2, act[0].set_value);
+        save_to_bkp(3, act[0].state.control);
 
-        data = (uint32_t)sensor_state.dispersion;
-        BKP->DR4 = (uint32_t)sensor_state.dispersion;
-        data = (uint32_t)sensor_state.hysteresis;
-        BKP->DR5 = (uint32_t)sensor_state.hysteresis;
-        data = (uint32_t)(sensor_state.error | (sensor_state.buff_size << 8));
-        BKP->DR6 = data;
+        save_float_to_bkp(4, sensor_state.dispersion*10);
+        save_float_to_bkp(5, sensor_state.hysteresis*10);
+        save_float_to_bkp(6, sensor_state.correction*10);
+        save_to_bkp(7, sensor_state.buff_size);
 
-        BKP->DR7 = (uint32_t)semistor_state.max_tmpr;
+        save_float_to_bkp(8, semistor_state.max_tmpr);
     }else{  // read data from bkpram
         HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
         HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
@@ -324,20 +332,16 @@ static void MX_RTC_Init(void){
         rtc.year = sDate.Year + 2000;
         rtc.weekday = sDate.WeekDay;
 
-        data = BKP->DR2;
-        act[0].set_value = (float)(BKP->DR2);
-        act[0].state.control = (u8)(BKP->DR3);
+        /*act[0].set_value = read_float_bkp(2, READ_FLOAT_UNSIGNED);
+        act[0].state.control = read_bkp(3);
 
-        sensor_state.dispersion = (float)(BKP->DR4);
-        data = BKP->DR5;
-        sensor_state.hysteresis = (float)(BKP->DR5);
-        data = BKP->DR6;
-        sensor_state.error = (u8)(data & 0xFF);
-        sensor_state.buff_size = (u8)((data & 0xFF00) >> 8);
+        sensor_state.dispersion = read_float_bkp(4, READ_FLOAT_UNSIGNED)/10;
+        sensor_state.hysteresis = read_float_bkp(5, READ_FLOAT_UNSIGNED)/10;
+        sensor_state.correction = read_float_bkp(6, READ_FLOAT_SIGNED)/10;
+        sensor_state.buff_size = read_bkp(7);
 
-        semistor_state.max_tmpr = (float)(BKP->DR7);
+        semistor_state.max_tmpr = read_float_bkp(8, READ_FLOAT_UNSIGNED);*/
     }
-    HAL_PWR_DisableBkUpAccess();
 }
 
 /* TIM3 init function */
@@ -547,6 +551,103 @@ void _Error_Handler(char *file, int line)
     {
     }
     /* USER CODE END Error_Handler_Debug */
+}
+
+static void save_to_bkp(u8 bkp_num, u8 var){
+    uint32_t data = var;
+    if(bkp_num%2 == 1){
+        data = data << 8;
+    }
+    HAL_PWR_EnableBkUpAccess();
+    switch (bkp_num / 2){
+    case 0:
+        BKP->DR1 |= data;
+        break;
+    case 1:
+        BKP->DR2 |= data;
+        break;
+    case 2:
+        BKP->DR3 |= data;
+        break;
+    case 3:
+        BKP->DR4 |= data;
+        break;
+    case 4:
+        BKP->DR5 |= data;
+        break;
+    case 5:
+        BKP->DR6 |= data;
+        break;
+    case 6:
+        BKP->DR7 |= data;
+        break;
+    case 7:
+        BKP->DR8 |= data;
+        break;
+    case 8:
+        BKP->DR9 |= data;
+        break;
+    case 9:
+        BKP->DR10 |= data;
+        break;
+    }
+    HAL_PWR_DisableBkUpAccess();
+}
+
+static void save_float_to_bkp(u8 bkp_num, float var){
+    char buf[5] = {0};
+    sprintf(buf, "%4.0f", (double)var);
+    u8 data = (u8)atoi(buf);
+    save_to_bkp(bkp_num, data);
+}
+static u8 read_bkp(u8 bkp_num){
+    uint32_t data = 0;
+    switch (bkp_num/2){
+    case 0:
+        data = BKP->DR1;
+        break;
+    case 1:
+        data = BKP->DR2;
+        break;
+    case 2:
+        data = BKP->DR3;
+        break;
+    case 3:
+        data = BKP->DR4;
+        break;
+    case 4:
+        data = BKP->DR5;
+        break;
+    case 5:
+        data = BKP->DR6;
+        break;
+    case 6:
+        data = BKP->DR7;
+        break;
+    case 7:
+        data = BKP->DR8;
+        break;
+    case 8:
+        data = BKP->DR9;
+        break;
+    case 9:
+        data = BKP->DR10;
+        break;
+    }
+    if(bkp_num%2 == 1){
+        data = data >> 8;
+    }
+    return (u8)(data & 0xFF);
+}
+static float read_float_bkp(u8 bkp_num, u8 sign){
+    u8 data = read_bkp(bkp_num);
+    char buf[5] = {0};
+    if(sign == READ_FLOAT_SIGNED){
+        sprintf(buf, "%d", (s8)data);
+    }else{
+        sprintf(buf, "%d", data);
+    }
+    return atoff(buf);
 }
 
 #ifdef  USE_FULL_ASSERT

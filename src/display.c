@@ -421,11 +421,10 @@ void menu_task( const void *parameters){
                 vTaskResume(displayTaskHandle);
                 vTaskSuspend(NULL);
             }else if(menu.page[menu.level - 1] == PAGE_MAX_TEMP_REG){
+                vTaskSuspend(buttonsTaskHandle);
+                pressed_time.ok = 0;
+                pressed_time.right = 0;
                 max_reg_temp_set();
-                SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
-                SSD1306_UpdateScreen();
-                vTaskResume(displayTaskHandle);
-                vTaskSuspend(NULL);
             }
         }
 
@@ -788,6 +787,7 @@ static void max_reg_temp_set(void){
     HAL_PWR_EnableBkUpAccess();
     BKP->DR7 = (uint32_t)semistor_state.max_tmpr;
     HAL_PWR_DisableBkUpAccess();
+    menu.level--;
 }
 
 #endif //DISPLAY_C

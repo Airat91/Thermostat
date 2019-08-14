@@ -99,7 +99,8 @@ sensor_t sensor_state = {
     SENSOR_OK,
     10,
     HYSTERESIS,
-    DISPERSION
+    DISPERSION,
+    0.0f
 };
 semistor_t semistor_state = {
     FALSE,

@@ -62,6 +62,8 @@ void control_task( const void *parameters);
 #define DISPERSION  1.0f
 #define SENSOR_MIN_VOLTAGE  0.01f
 #define SENSOR_MAX_VOLTAGE  3.0f
+#define MAX_CORRECTION  10.0f
+#define MIN_CORRECTION  -10.0f
 
 typedef enum{
     SENSOR_OK = 0,
@@ -73,6 +75,7 @@ typedef struct{
     u8 buff_size;
     float hysteresis;
     float dispersion;
+    float correction;
 }sensor_t;
 extern sensor_t sensor_state;
 typedef struct{
