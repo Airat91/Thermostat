@@ -49,18 +49,24 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f1xx_hal.h"
+#include "stdlib.h"
 #include "cmsis_os.h"
-#include "ds18.h"
+//#include "ds18.h"
 #include "control.h"
 #include "display.h"
 #include "stm32f1xx_ll_gpio.h"
-#include "step.h"
+//#include "step.h"
 #include "dcts.h"
 #include "pin_map.h"
 #include "buttons.h"
 
 #define FEEDER 0
 #define DEFAULT_TASK_PERIOD 100
+
+typedef enum{
+    READ_FLOAT_SIGNED = 0,
+    READ_FLOAT_UNSIGNED,
+}read_float_bkp_sign_t;
 
 
 /* Private variables ---------------------------------------------------------*/
@@ -71,6 +77,10 @@ TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 UART_HandleTypeDef huart1;
 osThreadId defaultTaskHandle;
+osThreadId buttonsTaskHandle;
+osThreadId displayTaskHandle;
+osThreadId menuTaskHandle;
+osThreadId controlTaskHandle;
 
 
 /* Private function prototypes -----------------------------------------------*/
@@ -83,6 +93,10 @@ static void MX_USART1_UART_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 void default_task(void const * argument);
+static void save_to_bkp(u8 bkp_num, u8 var);
+static void save_float_to_bkp(u8 bkp_num, float var);
+static u8 read_bkp(u8 bkp_num);
+static float read_float_bkp(u8 bkp_num, u8 sign);
 
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
@@ -98,12 +112,12 @@ int main(void){
     SystemClock_Config();
     MX_GPIO_Init();
     MX_IWDG_Init();
+    dcts_init();
     MX_RTC_Init();
     MX_ADC1_Init();
-    MX_USART1_UART_Init();
+    //MX_USART1_UART_Init();
     //MX_TIM3_Init();
-    MX_TIM2_Init();
-    dcts_init();
+    //MX_TIM2_Init();
     HAL_ADC_Start(&hadc1);
     HAL_ADCEx_InjectedStart(&hadc1);
     osThreadDef(own_task, default_task, osPriorityNormal, 0, 364);
@@ -117,13 +131,16 @@ int main(void){
 */
 
     osThreadDef(control_task, control_task, osPriorityNormal, 0, 364);
-    defaultTaskHandle = osThreadCreate(osThread(control_task), NULL);
+    controlTaskHandle = osThreadCreate(osThread(control_task), NULL);
 
-    osThreadDef(display_task, display_task, osPriorityNormal, 0, 364);
-    defaultTaskHandle = osThreadCreate(osThread(display_task), NULL);
+    osThreadDef(display_task, display_task, osPriorityNormal, 0, 512);
+    displayTaskHandle = osThreadCreate(osThread(display_task), NULL);
 
-    osThreadDef(buttons_task, buttons_task, osPriorityNormal, 0, 364);
-    defaultTaskHandle = osThreadCreate(osThread(buttons_task), NULL);
+    osThreadDef(buttons_task, buttons_task, osPriorityNormal, 0, 128);
+    buttonsTaskHandle = osThreadCreate(osThread(buttons_task), NULL);
+
+    osThreadDef(menu_task, menu_task, osPriorityNormal, 0, 364);
+    menuTaskHandle = osThreadCreate(osThread(menu_task), NULL);
 
 #endif
 
@@ -263,30 +280,68 @@ static void MX_IWDG_Init(void)
 
 /* RTC init function */
 static void MX_RTC_Init(void){
-    RTC_TimeTypeDef sTime;
+    RTC_TimeTypeDef sTime = {0};
+    RTC_DateTypeDef sDate = {0};
     __HAL_RCC_BKP_CLK_ENABLE();
     __HAL_RCC_PWR_CLK_ENABLE();
-    HAL_PWR_EnableBkUpAccess();
     __HAL_RCC_RTC_ENABLE();
     hrtc.Instance = RTC;
     hrtc.Init.AsynchPrediv = RTC_AUTO_1_SECOND;
     if (HAL_RTC_Init(&hrtc) != HAL_OK) {
         _Error_Handler(__FILE__, __LINE__);
     }
-    HAL_RTC_GetTime(&hrtc,&sTime,RTC_FORMAT_BIN);
+
     u32 data;
     const  u32 data_c = 0x1234;
     data = BKP->DR1;
-    if(data!=data_c){
+    if(data!=data_c){   // set default values
+        HAL_PWR_EnableBkUpAccess();
         BKP->DR1 = data_c;
-        sTime.Hours = 0x09;
-        sTime.Minutes = 0x01;
-        sTime.Seconds = 0x01;
-        if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK) {
-            _Error_Handler(__FILE__, __LINE__);
-        }
+        HAL_PWR_DisableBkUpAccess();
+
+        sTime.Hours = rtc.hour;
+        sTime.Minutes = rtc.minute;
+        sTime.Seconds = rtc.second;
+
+        sDate.Date = rtc.day;
+        sDate.Month = rtc.month;
+        sDate.Year = (uint8_t)(rtc.year - 2000);
+
+        HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD);
+        HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+
+        save_float_to_bkp(2, act[0].set_value);
+        save_to_bkp(3, act[0].state.control);
+
+        save_float_to_bkp(4, sensor_state.dispersion*10);
+        save_float_to_bkp(5, sensor_state.hysteresis*10);
+        save_float_to_bkp(6, sensor_state.correction*10);
+        save_to_bkp(7, sensor_state.buff_size);
+
+        save_float_to_bkp(8, semistor_state.max_tmpr);
+    }else{  // read data from bkpram
+        HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+        HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+
+        rtc.hour = sTime.Hours;
+        rtc.minute = sTime.Minutes;
+        rtc.second = sTime.Seconds;
+
+        rtc.day = sDate.Date;
+        rtc.month = sDate.Month;
+        rtc.year = sDate.Year + 2000;
+        rtc.weekday = sDate.WeekDay;
+
+        /*act[0].set_value = read_float_bkp(2, READ_FLOAT_UNSIGNED);
+        act[0].state.control = read_bkp(3);
+
+        sensor_state.dispersion = read_float_bkp(4, READ_FLOAT_UNSIGNED)/10;
+        sensor_state.hysteresis = read_float_bkp(5, READ_FLOAT_UNSIGNED)/10;
+        sensor_state.correction = read_float_bkp(6, READ_FLOAT_SIGNED)/10;
+        sensor_state.buff_size = read_bkp(7);
+
+        semistor_state.max_tmpr = read_float_bkp(8, READ_FLOAT_UNSIGNED);*/
     }
-    data = BKP->DR1;
 }
 
 /* TIM3 init function */
@@ -420,8 +475,8 @@ void default_task(void const * argument){
 
     HAL_IWDG_Refresh(&hiwdg);
     while(1){
-        HAL_RTC_GetTime(&hrtc,&time,RTC_FORMAT_BIN);
         HAL_RTC_GetDate(&hrtc,&date,RTC_FORMAT_BIN);
+        HAL_RTC_GetTime(&hrtc,&time,RTC_FORMAT_BIN);
 
         rtc.hour = time.Hours;
         rtc.minute = time.Minutes;
@@ -430,7 +485,7 @@ void default_task(void const * argument){
         rtc.day = date.Date;
         rtc.month = date.Month;
         rtc.year = date.Year + 2000;
-        rtc.weekday = date.WeekDay + 1;
+        rtc.weekday = date.WeekDay;
 
         HAL_IWDG_Refresh(&hiwdg);
         osDelayUntil(&last_wake_time, DEFAULT_TASK_PERIOD);
@@ -496,6 +551,103 @@ void _Error_Handler(char *file, int line)
     {
     }
     /* USER CODE END Error_Handler_Debug */
+}
+
+static void save_to_bkp(u8 bkp_num, u8 var){
+    uint32_t data = var;
+    if(bkp_num%2 == 1){
+        data = data << 8;
+    }
+    HAL_PWR_EnableBkUpAccess();
+    switch (bkp_num / 2){
+    case 0:
+        BKP->DR1 |= data;
+        break;
+    case 1:
+        BKP->DR2 |= data;
+        break;
+    case 2:
+        BKP->DR3 |= data;
+        break;
+    case 3:
+        BKP->DR4 |= data;
+        break;
+    case 4:
+        BKP->DR5 |= data;
+        break;
+    case 5:
+        BKP->DR6 |= data;
+        break;
+    case 6:
+        BKP->DR7 |= data;
+        break;
+    case 7:
+        BKP->DR8 |= data;
+        break;
+    case 8:
+        BKP->DR9 |= data;
+        break;
+    case 9:
+        BKP->DR10 |= data;
+        break;
+    }
+    HAL_PWR_DisableBkUpAccess();
+}
+
+static void save_float_to_bkp(u8 bkp_num, float var){
+    char buf[5] = {0};
+    sprintf(buf, "%4.0f", (double)var);
+    u8 data = (u8)atoi(buf);
+    save_to_bkp(bkp_num, data);
+}
+static u8 read_bkp(u8 bkp_num){
+    uint32_t data = 0;
+    switch (bkp_num/2){
+    case 0:
+        data = BKP->DR1;
+        break;
+    case 1:
+        data = BKP->DR2;
+        break;
+    case 2:
+        data = BKP->DR3;
+        break;
+    case 3:
+        data = BKP->DR4;
+        break;
+    case 4:
+        data = BKP->DR5;
+        break;
+    case 5:
+        data = BKP->DR6;
+        break;
+    case 6:
+        data = BKP->DR7;
+        break;
+    case 7:
+        data = BKP->DR8;
+        break;
+    case 8:
+        data = BKP->DR9;
+        break;
+    case 9:
+        data = BKP->DR10;
+        break;
+    }
+    if(bkp_num%2 == 1){
+        data = data >> 8;
+    }
+    return (u8)(data & 0xFF);
+}
+static float read_float_bkp(u8 bkp_num, u8 sign){
+    u8 data = read_bkp(bkp_num);
+    char buf[5] = {0};
+    if(sign == READ_FLOAT_SIGNED){
+        sprintf(buf, "%d", (s8)data);
+    }else{
+        sprintf(buf, "%d", data);
+    }
+    return atoff(buf);
 }
 
 #ifdef  USE_FULL_ASSERT

@@ -55,8 +55,35 @@ void control_task( const void *parameters);
 #define MAX_PWM_VALUE 32768
 #define CONTROL_TASK_PERIOD 100
 #define MAX_REG_TEMP 100.0f
-#define HYSTERESIS 0.5f
-#define TEMP_BUFF_SIZE  10
+#define MAX_SET_TEMP 40.0f
+#define MIN_SET_TEMP 5.0f
+#define HYSTERESIS 1.0f
+#define TEMP_MAX_BUFF_SIZE  32
+#define DISPERSION  1.0f
+#define SENSOR_MIN_VOLTAGE  0.01f
+#define SENSOR_MAX_VOLTAGE  3.0f
+#define MAX_CORRECTION  10.0f
+#define MIN_CORRECTION  -10.0f
+
+typedef enum{
+    SENSOR_OK = 0,
+    SENSOR_BREAK,
+    SENSOR_SHORT,
+}sensor_err;
+typedef struct{
+    u8 error;
+    u8 buff_size;
+    float hysteresis;
+    float dispersion;
+    float correction;
+}sensor_t;
+extern sensor_t sensor_state;
+typedef struct{
+    u8 overheat;
+    u16 overheat_cnt;
+    float max_tmpr;
+}semistor_t;
+extern semistor_t semistor_state;
 /*add functions and variable declarations before */
 #ifdef __cplusplus
 }

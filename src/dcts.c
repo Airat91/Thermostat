@@ -20,7 +20,7 @@ rtc_t rtc = {
 float pwr = 0;
 
 #define MEAS_NUM    5
-#define ACT_NUM 1
+#define ACT_NUM     1
 
 const uint8_t meas_num = MEAS_NUM;
 const uint8_t act_num = ACT_NUM;
@@ -50,7 +50,7 @@ void dcts_init () {
 
     strcpy (act[0].name, "Floor");
     strcpy (act[0].unit, "°C");
-    act[0].set_value = 35.0f;
+    act[0].set_value = 27.0f;
     act[0].meas_value = 0.0f;
     act[0].state.control = TRUE;
     act[0].state.pin_state = FALSE;
