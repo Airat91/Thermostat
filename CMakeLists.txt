@@ -94,13 +94,14 @@ install(FILES  ${CMAKE_SOURCE_DIR}/cmake_arm/libfreertos_lib.a DESTINATION ${LIB
         PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
 install(FILES  ${CMAKE_SOURCE_DIR}/cmake_arm/libstm32f2_hal_lib.a DESTINATION ${LIB_INSTALL_DIR}/
         PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
-
+set(MAP_FILE ${PROJECT_SOURCE_DIR}/build/output.map)
 set_target_properties(${BUILD_TARGET} PROPERTIES LINK_FLAGS 
     "-mcpu=${MCU_ARCH}\
     -mthumb\
     -O0\
     -specs=nosys.specs\
-    -Wl,-gc-sections -T${PROJECT_SOURCE_DIR}/${MCU_LINKER_SCRIPT}")
+    -Wl,-gc-sections -T${PROJECT_SOURCE_DIR}/${MCU_LINKER_SCRIPT}\
+    -Wl,-Map,${MAP_FILE}")
 
 target_compile_options(${BUILD_TARGET} PUBLIC 
                              -mcpu=${MCU_ARCH}
