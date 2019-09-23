@@ -332,7 +332,7 @@ static void MX_RTC_Init(void){
         rtc.year = sDate.Year + 2000;
         rtc.weekday = sDate.WeekDay;
 
-        /*act[0].set_value = read_float_bkp(2, READ_FLOAT_UNSIGNED);
+        act[0].set_value = read_float_bkp(2, READ_FLOAT_UNSIGNED);
         act[0].state.control = read_bkp(3);
 
         sensor_state.dispersion = read_float_bkp(4, READ_FLOAT_UNSIGNED)/10;
@@ -340,7 +340,7 @@ static void MX_RTC_Init(void){
         sensor_state.correction = read_float_bkp(6, READ_FLOAT_SIGNED)/10;
         sensor_state.buff_size = read_bkp(7);
 
-        semistor_state.max_tmpr = read_float_bkp(8, READ_FLOAT_UNSIGNED);*/
+        semistor_state.max_tmpr = read_float_bkp(8, READ_FLOAT_UNSIGNED);
     }
 }
 
