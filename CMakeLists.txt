@@ -41,8 +41,9 @@ file(GLOB STM32_HEADERS ${STM32_HEADERS} Drivers/${MCU_FAMILY}_HAL_Driver/Inc/*.
 file(GLOB STM32_LEGACY_HEADERS Drivers/${MCU_FAMILY}_HAL_Driver/Inc/Legacy/*.h)
 #stm_hal files END
 
-file(GLOB USER_SOURCES src/*.c)
 file(GLOB DCTS_SOURCES modules/DCTS/src/*.c)
+
+file(GLOB USER_SOURCES src/*.c)
 file(GLOB USB_CORE Middlewares/ST/STM32_USB_Device_Library/Core/Src/*.c)
 file(GLOB USB_CLASS_CDC Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/*.c)
 file(GLOB LINKER_FILE ${MCU_LINKER_SCRIPT})

@@ -165,7 +165,7 @@ void control_task( const void *parameters){
         dcts_write_meas_value (4, val);
 
         /* Floor T */
-        val = ntc_tmpr_calc(meas[3].value);
+        val = ntc_tmpr_calc(dcts_meas[3].value);
         if(tick < sensor_state.buff_size){
             temp_buf[tick] = val;
             tick++;
@@ -175,7 +175,7 @@ void control_task( const void *parameters){
             }
             val = val/sensor_state.buff_size;
             dcts_write_act_meas_value (0, val);
-        }else if((val >= act[0].meas_value - sensor_state.dispersion) && (val <= act[0].meas_value + sensor_state.dispersion)){
+        }else if((val >= dcts_act[0].meas_value - sensor_state.dispersion) && (val <= dcts_act[0].meas_value + sensor_state.dispersion)){
             temp_buf[tick%sensor_state.buff_size] = val;
             tick++;
             val = 0.0f;
@@ -187,7 +187,7 @@ void control_task( const void *parameters){
         }
 
         /* Reg T */
-        val = meas[4].value/0.01f;
+        val = dcts_meas[4].value/0.01f;
         dcts_write_meas_value (1, val);
 
         /*in.require_value.data.float32 = act[0].set_value;
@@ -265,18 +265,18 @@ void pid(pid_in_t * FBInputs,pid_var_t * FBVars,\
 }
 static void reg_on_control(void){
     static u8 last_overheat = FALSE;
-    if (meas[1].value > semistor_state.max_tmpr){  // overheating
-        act[0].state.short_cir = TRUE;
+    if (dcts_meas[1].value > semistor_state.max_tmpr){  // overheating
+        dcts_act[0].state.short_cir = TRUE;
         semistor_state.overheat = TRUE;
         if(last_overheat == FALSE){
             semistor_state.overheat_cnt++;
         }
     }else{
-        act[0].state.short_cir = FALSE;
+        dcts_act[0].state.short_cir = FALSE;
         semistor_state.overheat = FALSE;
-        if (act[0].meas_value >= act[0].set_value){
+        if (dcts_act[0].meas_value >= dcts_act[0].set_value){
             PWM_duty = 0;
-        }else if ((act[0].meas_value >= act[0].set_value - sensor_state.hysteresis) && (act[0].meas_value < act[0].set_value)){
+        }else if ((dcts_act[0].meas_value >= dcts_act[0].set_value - sensor_state.hysteresis) && (dcts_act[0].meas_value < dcts_act[0].set_value)){
             PWM_duty = 30;
         }else{
             PWM_duty = 100;

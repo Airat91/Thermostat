@@ -299,19 +299,19 @@ static void MX_RTC_Init(void){
         BKP->DR1 = data_c;
         HAL_PWR_DisableBkUpAccess();
 
-        sTime.Hours = rtc.hour;
-        sTime.Minutes = rtc.minute;
-        sTime.Seconds = rtc.second;
+        sTime.Hours = dcts.dcts_rtc.hour;
+        sTime.Minutes = dcts.dcts_rtc.minute;
+        sTime.Seconds = dcts.dcts_rtc.second;
 
-        sDate.Date = rtc.day;
-        sDate.Month = rtc.month;
-        sDate.Year = (uint8_t)(rtc.year - 2000);
+        sDate.Date = dcts.dcts_rtc.day;
+        sDate.Month = dcts.dcts_rtc.month;
+        sDate.Year = (uint8_t)(dcts.dcts_rtc.year - 2000);
 
         HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD);
         HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
 
-        save_float_to_bkp(2, act[0].set_value);
-        save_to_bkp(3, act[0].state.control);
+        save_float_to_bkp(2, dcts_act[0].set_value);
+        save_to_bkp(3, dcts_act[0].state.control);
 
         save_float_to_bkp(4, sensor_state.dispersion*10);
         save_float_to_bkp(5, sensor_state.hysteresis*10);
@@ -323,17 +323,17 @@ static void MX_RTC_Init(void){
         HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
         HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
 
-        rtc.hour = sTime.Hours;
-        rtc.minute = sTime.Minutes;
-        rtc.second = sTime.Seconds;
+        dcts.dcts_rtc.hour = sTime.Hours;
+        dcts.dcts_rtc.minute = sTime.Minutes;
+        dcts.dcts_rtc.second = sTime.Seconds;
 
-        rtc.day = sDate.Date;
-        rtc.month = sDate.Month;
-        rtc.year = sDate.Year + 2000;
-        rtc.weekday = sDate.WeekDay;
+        dcts.dcts_rtc.day = sDate.Date;
+        dcts.dcts_rtc.month = sDate.Month;
+        dcts.dcts_rtc.year = sDate.Year + 2000;
+        dcts.dcts_rtc.weekday = sDate.WeekDay;
 
-        act[0].set_value = read_float_bkp(2, READ_FLOAT_UNSIGNED);
-        act[0].state.control = read_bkp(3);
+        dcts_act[0].set_value = read_float_bkp(2, READ_FLOAT_UNSIGNED);
+        dcts_act[0].state.control = read_bkp(3);
 
         sensor_state.dispersion = read_float_bkp(4, READ_FLOAT_UNSIGNED)/10;
         sensor_state.hysteresis = read_float_bkp(5, READ_FLOAT_UNSIGNED)/10;
@@ -478,14 +478,14 @@ void default_task(void const * argument){
         HAL_RTC_GetDate(&hrtc,&date,RTC_FORMAT_BIN);
         HAL_RTC_GetTime(&hrtc,&time,RTC_FORMAT_BIN);
 
-        rtc.hour = time.Hours;
-        rtc.minute = time.Minutes;
-        rtc.second = time.Seconds;
+        dcts.dcts_rtc.hour = time.Hours;
+        dcts.dcts_rtc.minute = time.Minutes;
+        dcts.dcts_rtc.second = time.Seconds;
 
-        rtc.day = date.Date;
-        rtc.month = date.Month;
-        rtc.year = date.Year + 2000;
-        rtc.weekday = date.WeekDay;
+        dcts.dcts_rtc.day = date.Date;
+        dcts.dcts_rtc.month = date.Month;
+        dcts.dcts_rtc.year = date.Year + 2000;
+        dcts.dcts_rtc.weekday = date.WeekDay;
 
         HAL_IWDG_Refresh(&hiwdg);
         osDelayUntil(&last_wake_time, DEFAULT_TASK_PERIOD);

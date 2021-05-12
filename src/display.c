@@ -108,18 +108,18 @@ void display_task( const void *parameters){
 
         /* Buttons read */
         if (pressed_time.up){
-            if(act[0].set_value < MAX_SET_TEMP){
-                act[0].set_value += 1.0f;
+            if(dcts_act[0].set_value < MAX_SET_TEMP){
+                dcts_act[0].set_value += 1.0f;
                 HAL_PWR_EnableBkUpAccess();
-                BKP->DR2 = (uint32_t)act[0].set_value;
+                BKP->DR2 = (uint32_t)dcts_act[0].set_value;
                 HAL_PWR_DisableBkUpAccess();
             }
         }
         if (pressed_time.down){
-            if(act[0].set_value > MIN_SET_TEMP){
-                act[0].set_value -= 1.0f;
+            if(dcts_act[0].set_value > MIN_SET_TEMP){
+                dcts_act[0].set_value -= 1.0f;
                 HAL_PWR_EnableBkUpAccess();
-                BKP->DR2 = (uint32_t)act[0].set_value;
+                BKP->DR2 = (uint32_t)dcts_act[0].set_value;
                 HAL_PWR_DisableBkUpAccess();
             }
         }
@@ -150,14 +150,14 @@ void display_task( const void *parameters){
             vTaskSuspend(NULL);
         }
         if (pressed_time.up && pressed_time.down){
-            if(act[0].state.control == TRUE){
-                act[0].state.control = FALSE;
-            }else if(act[0].state.control == FALSE){
-                act[0].state.control = TRUE;
+            if(dcts_act[0].state.control == TRUE){
+                dcts_act[0].state.control = FALSE;
+            }else if(dcts_act[0].state.control == FALSE){
+                dcts_act[0].state.control = TRUE;
             }
 
             HAL_PWR_EnableBkUpAccess();
-            BKP->DR3 = (uint32_t)act[0].state.control;
+            BKP->DR3 = (uint32_t)dcts_act[0].state.control;
             HAL_PWR_DisableBkUpAccess();
         }
 
@@ -165,7 +165,7 @@ void display_task( const void *parameters){
         if(skin == SKIN_FULL){  // Full information
 
             if(sensor_state.error == SENSOR_OK){
-                sprintf(buff,"%2.1f", (double)act[0].meas_value);
+                sprintf(buff,"%2.1f", (double)dcts_act[0].meas_value);
                 SSD1306_GotoXY(0, 14);
                 SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
             }else if(sensor_state.error == SENSOR_BREAK){
@@ -186,15 +186,15 @@ void display_task( const void *parameters){
                 SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
             }
 
-            if(act[0].state.control == TRUE){
-                sprintf(buff,"Уст %2.0f%s", (double)act[0].set_value, act[0].unit);
+            if(dcts_act[0].state.control == TRUE){
+                sprintf(buff,"Уст %2.0f%s", (double)dcts_act[0].set_value, dcts_act[0].unit);
             }else{
                 sprintf(buff,"Выключен");
             }
             SSD1306_GotoXY(70, 16);
             SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
-            sprintf(buff,"Рег%3.0f%s", (double)meas[1].value, meas[1].unit);
+            sprintf(buff,"Рег%3.0f%s", (double)dcts_meas[1].value, dcts_meas[1].unit);
             SSD1306_GotoXY(70, 29);
             SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
@@ -203,7 +203,7 @@ void display_task( const void *parameters){
         }else if(skin == SKIN_1){    // Only current and required temperature
 
             if(sensor_state.error == SENSOR_OK){
-                sprintf(buff,"%2.1f", (double)act[0].meas_value);
+                sprintf(buff,"%2.1f", (double)dcts_act[0].meas_value);
                 SSD1306_GotoXY(0, 14);
                 SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
             }else if(sensor_state.error == SENSOR_BREAK){
@@ -224,8 +224,8 @@ void display_task( const void *parameters){
                 SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
             }
 
-            if(act[0].state.control == TRUE){
-                sprintf(buff,"Уст %2.0f%s", (double)act[0].set_value, act[0].unit);
+            if(dcts_act[0].state.control == TRUE){
+                sprintf(buff,"Уст %2.0f%s", (double)dcts_act[0].set_value, dcts_act[0].unit);
             }else {
                 sprintf(buff,"Выключен");
             }
@@ -235,7 +235,7 @@ void display_task( const void *parameters){
         }else if(skin == SKIN_2){    // Current and required temperature and clock
 
             if(sensor_state.error == SENSOR_OK){
-                sprintf(buff,"%2.1f", (double)act[0].meas_value);
+                sprintf(buff,"%2.1f", (double)dcts_act[0].meas_value);
                 SSD1306_GotoXY(0, 14);
                 SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
             }else if(sensor_state.error == SENSOR_BREAK){
@@ -256,8 +256,8 @@ void display_task( const void *parameters){
                 SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
             }
 
-            if(act[0].state.control == TRUE){
-                sprintf(buff,"Уст %2.0f%s", (double)act[0].set_value, act[0].unit);
+            if(dcts_act[0].state.control == TRUE){
+                sprintf(buff,"Уст %2.0f%s", (double)dcts_act[0].set_value, dcts_act[0].unit);
             }else {
                 sprintf(buff,"Выключен");
             }
@@ -281,7 +281,7 @@ void display_task( const void *parameters){
 u8 display_time(u8 y){
     char buff[20] = {0};
     char weekday[3] = {0};
-    switch (rtc.weekday) {
+    switch (dcts.dcts_rtc.weekday) {
     case 1:
         strcpy(weekday, "Пн");
         break;
@@ -304,11 +304,11 @@ u8 display_time(u8 y){
         strcpy(weekday, "Вс");
         break;
     }
-    sprintf(buff,"%2d.%2d.%4d ", rtc.day, rtc.month, rtc.year);
-    if(rtc.day < 10){
+    sprintf(buff,"%2d.%2d.%4d ", dcts.dcts_rtc.day, dcts.dcts_rtc.month, dcts.dcts_rtc.year);
+    if(dcts.dcts_rtc.day < 10){
         buff[0] = '0';
     }
-    if(rtc.month < 10){
+    if(dcts.dcts_rtc.month < 10){
         buff[3] = '0';
     }
     SSD1306_GotoXY(0, y);
@@ -317,11 +317,11 @@ u8 display_time(u8 y){
     SSD1306_GotoXY(74, y);
     SSD1306_Puts(weekday, &Font_7x10, SSD1306_COLOR_WHITE);
 
-    sprintf(buff,"%2d:%2d", rtc.hour, rtc.minute);
-    if(rtc.hour < 10){
+    sprintf(buff,"%2d:%2d", dcts.dcts_rtc.hour, dcts.dcts_rtc.minute);
+    if(dcts.dcts_rtc.hour < 10){
         buff[0] = '0';
     }
-    if(rtc.minute < 10){
+    if(dcts.dcts_rtc.minute < 10){
         buff[3] = '0';
     }
     SSD1306_GotoXY(92, y);
@@ -478,94 +478,94 @@ static void clock_set(void){
         if (pressed_time.down){
             switch (position) {
             case 0:
-                if(rtc.day < 10){
-                    rtc.day = 0;
+                if(dcts.dcts_rtc.day < 10){
+                    dcts.dcts_rtc.day = 0;
                 }else{
-                    rtc.day -= 10;
+                    dcts.dcts_rtc.day -= 10;
                 }
                 break;
             case 1:
-                if(rtc.day < 1){
-                    rtc.day = 0;
+                if(dcts.dcts_rtc.day < 1){
+                    dcts.dcts_rtc.day = 0;
                 }else{
-                    rtc.day -= 1;
+                    dcts.dcts_rtc.day -= 1;
                 }
                 break;
             case 2:
-                if(rtc.month < 10){
-                    rtc.month = 0;
+                if(dcts.dcts_rtc.month < 10){
+                    dcts.dcts_rtc.month = 0;
                 }else{
-                    rtc.month -= 10;
+                    dcts.dcts_rtc.month -= 10;
                 }
                 break;
             case 3:
-                if(rtc.month < 1){
-                    rtc.month = 0;
+                if(dcts.dcts_rtc.month < 1){
+                    dcts.dcts_rtc.month = 0;
                 }else{
-                    rtc.month -= 1;
+                    dcts.dcts_rtc.month -= 1;
                 }
                 break;
             case 4:
-                if(rtc.year < RTC_MIN_YEAR){
-                    rtc.year = RTC_MIN_YEAR;
+                if(dcts.dcts_rtc.year < RTC_MIN_YEAR){
+                    dcts.dcts_rtc.year = RTC_MIN_YEAR;
                 }else{
-                    rtc.year -= 1000;
+                    dcts.dcts_rtc.year -= 1000;
                 }
                 break;
             case 5:
-                if(rtc.year < RTC_MIN_YEAR){
-                    rtc.year = RTC_MIN_YEAR;
+                if(dcts.dcts_rtc.year < RTC_MIN_YEAR){
+                    dcts.dcts_rtc.year = RTC_MIN_YEAR;
                 }else{
-                    rtc.year -= 100;
+                    dcts.dcts_rtc.year -= 100;
                 }
                 break;
             case 6:
-                if(rtc.year < RTC_MIN_YEAR){
-                    rtc.year = RTC_MIN_YEAR;
+                if(dcts.dcts_rtc.year < RTC_MIN_YEAR){
+                    dcts.dcts_rtc.year = RTC_MIN_YEAR;
                 }else{
-                    rtc.year -= 10;
+                    dcts.dcts_rtc.year -= 10;
                 }
                 break;
             case 7:
-                if(rtc.year < RTC_MIN_YEAR){
-                    rtc.year = RTC_MIN_YEAR;
+                if(dcts.dcts_rtc.year < RTC_MIN_YEAR){
+                    dcts.dcts_rtc.year = RTC_MIN_YEAR;
                 }else{
-                    rtc.year -= 1;
+                    dcts.dcts_rtc.year -= 1;
                 }
                 break;
             case 8:
-                if(rtc.weekday < 2){
-                    rtc.weekday = 1;
+                if(dcts.dcts_rtc.weekday < 2){
+                    dcts.dcts_rtc.weekday = 1;
                 }else{
-                    rtc.weekday -= 1;
+                    dcts.dcts_rtc.weekday -= 1;
                 }
                 break;
             case 9:
-                if(rtc.hour < 10){
-                    rtc.hour = 0;
+                if(dcts.dcts_rtc.hour < 10){
+                    dcts.dcts_rtc.hour = 0;
                 }else{
-                    rtc.hour -= 10;
+                    dcts.dcts_rtc.hour -= 10;
                 }
                 break;
             case 10:
-                if(rtc.hour < 1){
-                    rtc.hour = 0;
+                if(dcts.dcts_rtc.hour < 1){
+                    dcts.dcts_rtc.hour = 0;
                 }else{
-                    rtc.hour -= 1;
+                    dcts.dcts_rtc.hour -= 1;
                 }
                 break;
             case 11:
-                if(rtc.minute < 10){
-                    rtc.minute = 0;
+                if(dcts.dcts_rtc.minute < 10){
+                    dcts.dcts_rtc.minute = 0;
                 }else{
-                    rtc.minute -= 10;
+                    dcts.dcts_rtc.minute -= 10;
                 }
                 break;
             case 12:
-                if(rtc.minute < 1){
-                    rtc.minute = 0;
+                if(dcts.dcts_rtc.minute < 1){
+                    dcts.dcts_rtc.minute = 0;
                 }else{
-                    rtc.minute -= 1;
+                    dcts.dcts_rtc.minute -= 1;
                 }
                 break;
             }
@@ -575,81 +575,81 @@ static void clock_set(void){
         if (pressed_time.up){
             switch (position) {
             case 0:
-                rtc.day += 10;
-                if(rtc.day > RTC_MAX_DAY){
-                    rtc.day = RTC_MAX_DAY;
+                dcts.dcts_rtc.day += 10;
+                if(dcts.dcts_rtc.day > RTC_MAX_DAY){
+                    dcts.dcts_rtc.day = RTC_MAX_DAY;
                 }
                 break;
             case 1:
-                rtc.day += 1;
-                if(rtc.day > RTC_MAX_DAY){
-                    rtc.day = RTC_MAX_DAY;
+                dcts.dcts_rtc.day += 1;
+                if(dcts.dcts_rtc.day > RTC_MAX_DAY){
+                    dcts.dcts_rtc.day = RTC_MAX_DAY;
                 }
                 break;
             case 2:
-                rtc.month += 10;
-                if(rtc.month > RTC_MAX_MONTH){
-                    rtc.month = RTC_MAX_MONTH;
+                dcts.dcts_rtc.month += 10;
+                if(dcts.dcts_rtc.month > RTC_MAX_MONTH){
+                    dcts.dcts_rtc.month = RTC_MAX_MONTH;
                 }
                 break;
             case 3:
-                rtc.month += 1;
-                if(rtc.month > RTC_MAX_MONTH){
-                    rtc.month = RTC_MAX_MONTH;
+                dcts.dcts_rtc.month += 1;
+                if(dcts.dcts_rtc.month > RTC_MAX_MONTH){
+                    dcts.dcts_rtc.month = RTC_MAX_MONTH;
                 }
                 break;
             case 4:
-                rtc.year += 1000;
-                if(rtc.year > RTC_MAX_YEAR){
-                    rtc.year = RTC_MAX_YEAR;
+                dcts.dcts_rtc.year += 1000;
+                if(dcts.dcts_rtc.year > RTC_MAX_YEAR){
+                    dcts.dcts_rtc.year = RTC_MAX_YEAR;
                 }
                 break;
             case 5:
-                rtc.year += 100;
-                if(rtc.year > RTC_MAX_YEAR){
-                    rtc.year = RTC_MAX_YEAR;
+                dcts.dcts_rtc.year += 100;
+                if(dcts.dcts_rtc.year > RTC_MAX_YEAR){
+                    dcts.dcts_rtc.year = RTC_MAX_YEAR;
                 }
                 break;
             case 6:
-                rtc.year += 10;
-                if(rtc.year > RTC_MAX_YEAR){
-                    rtc.year = RTC_MAX_YEAR;
+                dcts.dcts_rtc.year += 10;
+                if(dcts.dcts_rtc.year > RTC_MAX_YEAR){
+                    dcts.dcts_rtc.year = RTC_MAX_YEAR;
                 }
                 break;
             case 7:
-                rtc.year += 1;
-                if(rtc.year > RTC_MAX_YEAR){
-                    rtc.year = RTC_MAX_YEAR;
+                dcts.dcts_rtc.year += 1;
+                if(dcts.dcts_rtc.year > RTC_MAX_YEAR){
+                    dcts.dcts_rtc.year = RTC_MAX_YEAR;
                 }
                 break;
             case 8:
-                rtc.weekday += 1;
-                if(rtc.weekday > RTC_MAX_WEEKDAY){
-                    rtc.weekday = RTC_MAX_WEEKDAY;
+                dcts.dcts_rtc.weekday += 1;
+                if(dcts.dcts_rtc.weekday > RTC_MAX_WEEKDAY){
+                    dcts.dcts_rtc.weekday = RTC_MAX_WEEKDAY;
                 }
                 break;
             case 9:
-                rtc.hour += 10;
-                if(rtc.hour > RTC_MAX_HOUR){
-                    rtc.hour = RTC_MAX_HOUR;
+                dcts.dcts_rtc.hour += 10;
+                if(dcts.dcts_rtc.hour > RTC_MAX_HOUR){
+                    dcts.dcts_rtc.hour = RTC_MAX_HOUR;
                 }
                 break;
             case 10:
-                rtc.hour += 1;
-                if(rtc.hour > RTC_MAX_HOUR){
-                    rtc.hour = RTC_MAX_HOUR;
+                dcts.dcts_rtc.hour += 1;
+                if(dcts.dcts_rtc.hour > RTC_MAX_HOUR){
+                    dcts.dcts_rtc.hour = RTC_MAX_HOUR;
                 }
                 break;
             case 11:
-                rtc.minute += 10;
-                if(rtc.minute > RTC_MAX_MINUTE){
-                    rtc.minute = RTC_MAX_MINUTE;
+                dcts.dcts_rtc.minute += 10;
+                if(dcts.dcts_rtc.minute > RTC_MAX_MINUTE){
+                    dcts.dcts_rtc.minute = RTC_MAX_MINUTE;
                 }
                 break;
             case 12:
-                rtc.minute += 1;
-                if(rtc.minute > RTC_MAX_MINUTE){
-                    rtc.minute = RTC_MAX_MINUTE;
+                dcts.dcts_rtc.minute += 1;
+                if(dcts.dcts_rtc.minute > RTC_MAX_MINUTE){
+                    dcts.dcts_rtc.minute = RTC_MAX_MINUTE;
                 }
                 break;
             }
@@ -720,14 +720,14 @@ static void clock_set(void){
         }
     }
     /* save new time and data */
-    time.Hours = rtc.hour;
-    time.Minutes = rtc.minute;
+    time.Hours = dcts.dcts_rtc.hour;
+    time.Minutes = dcts.dcts_rtc.minute;
     time.Seconds = 0;
 
-    date.Date = rtc.day;
-    date.Month = rtc.month;
-    date.Year = (uint8_t)(rtc.year - 2000);
-    date.WeekDay = rtc.weekday;
+    date.Date = dcts.dcts_rtc.day;
+    date.Month = dcts.dcts_rtc.month;
+    date.Year = (uint8_t)(dcts.dcts_rtc.year - 2000);
+    date.WeekDay = dcts.dcts_rtc.weekday;
 
     HAL_RTC_SetDate(&hrtc,&date,RTC_FORMAT_BIN);
     HAL_RTC_SetTime(&hrtc,&time,RTC_FORMAT_BIN);

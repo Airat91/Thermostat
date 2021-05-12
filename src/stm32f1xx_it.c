@@ -252,19 +252,19 @@ void EXTI9_5_IRQHandler(void) {
 
     static uint8_t sync_tick = 0;
 
-    if ((act[0].state.control == FALSE)||(act[0].state.short_cir == TRUE)){
+    if ((dcts_act[0].state.control == FALSE)||(dcts_act[0].state.short_cir == TRUE)){
         HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_SET);
-        act[0].state.pin_state = FALSE;
+        dcts_act[0].state.pin_state = FALSE;
     }else{
-        if(act[0].state.pin_state){  // если идет нагрев
+        if(dcts_act[0].state.pin_state){  // если идет нагрев
             if(sync_tick > PWM_duty){
                 HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_SET);
-                act[0].state.pin_state = FALSE;
+                dcts_act[0].state.pin_state = FALSE;
             }
         }else{
             if((sync_tick == 0) && (PWM_duty > 0)){
                 HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_RESET);
-                act[0].state.pin_state = TRUE;
+                dcts_act[0].state.pin_state = TRUE;
             }
         }
     }
