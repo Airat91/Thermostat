@@ -148,8 +148,8 @@ int main(void){
     osThreadDef(buttons_task, buttons_task, osPriorityNormal, 0, 128);
     buttonsTaskHandle = osThreadCreate(osThread(buttons_task), NULL);
 
-    /*osThreadDef(menu_task, menu_task, osPriorityNormal, 0, 364);
-    menuTaskHandle = osThreadCreate(osThread(menu_task), NULL);*/
+    osThreadDef(menu_task, navigation_task, osPriorityNormal, 0, 364);
+    menuTaskHandle = osThreadCreate(osThread(menu_task), NULL);
 
 #endif
 

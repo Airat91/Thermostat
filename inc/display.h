@@ -60,9 +60,11 @@ typedef enum{
 }skin_t;
 
 void display_task( const void *parameters);
-void menu_task( const void *parameters);
+void navigation_task( const void *parameters);
 uint8_t align_text_center(char* string, FontDef_t font);
 uint8_t align_text_right(char* string, FontDef_t font);
+uint32_t uint32_pow(uint16_t x, uint8_t pow);
+float float_pow(float x, int pow);
 #define DISPLAY_TASK_PERIOD 500
 /*add functions and variable declarations before */
 #ifdef __cplusplus
