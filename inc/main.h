@@ -51,6 +51,8 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
+#include "stdint.h"
+
 #define AIR_PORT GPIOA
 #define AIR_PIN  LL_GPIO_PIN_7
 #define FLOW_PORT GPIOA
@@ -81,6 +83,13 @@ PA10     ------> USART1_RX
 #define LED_PIN  LL_GPIO_PIN_13
 
 
+#define MEAS_NUM 10
+#define ACT_NUM 2
+#define RELE_NUM 1
+
+#define SAVED_PARAMS_SIZE 7
+
+
 /* ########################## Assert Selection ############################## */
 /**
   * @brief Uncomment the line below to expanse the "assert_param" macro in the 
@@ -98,6 +107,99 @@ void _Error_Handler(char *, int);
 #ifdef __cplusplus
 }
 #endif
+
+ typedef enum {
+     TMPR_FLOOR_GRAD = 0,
+     TMPR_FLOOR_RES,
+     TMPR_FLOOR_ADC,
+     TMPR_FLOOR_VLT,
+     TMPR_SEM_GRAD,
+     TMPR_SEM_ADC,
+     TMPR_SEM_VLT,
+     VREF_VLT,
+     VBAT_VLT,
+     CONSUMPTION,
+ }dcts_meas_t;
+
+ typedef enum {
+     HEATING = 0,
+     SEMISTOR,
+ }dcts_act_t;
+
+ typedef enum {
+     HEATER = 0,
+ }dcts_rele_t;
+
+ typedef enum{
+     MENU_NAVIGATION,
+     DIGIT_EDIT,
+ }navigation_t;
+
+ typedef union{
+     struct{
+         uint16_t mdb_address;
+         uint16_t act_enable[ACT_NUM];
+         float    act_set[ACT_NUM];
+         float    act_hyst[ACT_NUM];
+         uint16_t rele[RELE_NUM];
+     }params;
+     uint16_t word[SAVED_PARAMS_SIZE];
+ }saved_to_flash_t;
+
+ typedef enum{
+     VAL_UNKNOWN = 0,
+     VAL_UINT8,
+     VAL_INT8,
+     VAL_UINT16,
+     VAL_INT16,
+     VAL_UINT32,
+     VAL_INT32,
+     VAL_FLOAT,
+ }edit_val_type;
+
+ typedef union{
+     uint8_t * p_uint8;
+     int8_t * p_int8;
+     uint16_t * p_uint16;
+     int16_t * p_int16;
+     uint32_t * p_uint32;
+     int32_t * p_int32;
+     float * p_float;
+ }edit_val_p_type_t;
+
+ typedef union{
+     uint8_t uint8;
+     int8_t int8;
+     uint16_t uint16;
+     int16_t int16;
+     uint32_t uint32;
+     int32_t int32;
+     float vfloat;
+ }edit_val_type_t;
+
+ typedef struct{
+     edit_val_p_type_t p_val;
+     edit_val_type_t val_min;
+     edit_val_type_t val_max;
+     int8_t digit;
+     int8_t digit_min;
+     int8_t digit_max;
+     edit_val_type type;
+     uint8_t select_width;
+     uint8_t select_shift;
+ }edit_val_t;
+
+ extern uint32_t us_cnt_H;
+ extern navigation_t navigation_style;
+ extern edit_val_t edit_val;
+ extern saved_to_flash_t config;
+
+ uint32_t us_tim_get_value(void);
+ void us_tim_delay(uint32_t us);
+ uint32_t uint32_pow(uint16_t x, uint8_t pow);
+ uint16_t uint16_pow(uint16_t x, uint16_t pow);
+ float float_pow(float x, int pow);
+ void refresh_watchdog(void);
 
 #endif /* __MAIN_H__ */
 

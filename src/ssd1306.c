@@ -175,7 +175,7 @@ char SSD1306_Putc(char ch, FontDef_t* Font, SSD1306_COLOR_t color) {
 	}
 	
 	/* Go through font */
-	for (i = 0; i < Font->FontHeight; i++) {
+    /*for (i = 0; i < Font->FontHeight; i++) {
         b = Font->data[(ch - Font->shift) * Font->FontHeight + i];
 		for (j = 0; j < Font->FontWidth; j++) {
 			if ((b << j) & 0x8000) {
@@ -184,8 +184,23 @@ char SSD1306_Putc(char ch, FontDef_t* Font, SSD1306_COLOR_t color) {
 				SSD1306_DrawPixel(SSD1306.CurrentX + j, (SSD1306.CurrentY + i), (SSD1306_COLOR_t)!color);
 			}
 		}
-	}
-	
+    }*/
+
+    uint16_t data = 0;
+    for (uint8_t line_num = 1; line_num < (Font->FontHeight+1); line_num++) {
+        if(Font->data_size_in_bytes == 1){
+            uint8_t * line_1_byte = Font->data;
+            data = (uint16_t)(line_1_byte[(ch - Font->shift + 1) * Font->FontHeight - line_num] << 8);
+        }else if(Font->data_size_in_bytes == 2){
+            uint16_t * line_2_byte = Font->data;
+            data = line_2_byte[(ch - Font->shift + 1) * Font->FontHeight - line_num];
+        }
+        for (uint8_t x_pos = 0; x_pos < Font->FontWidth; x_pos++) {
+            if (data & (0x8000 >> x_pos)) {
+                SSD1306_DrawPixel(SSD1306.CurrentX + x_pos, (SSD1306.CurrentY + Font->FontHeight - line_num), color);
+            }
+        }
+    }
 	/* Increase pointer */
 	SSD1306.CurrentX += Font->FontWidth;
 	

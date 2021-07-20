@@ -44,13 +44,25 @@
 /*add includes below */
 #include "type_def.h"
 #include "stm32f1xx_hal.h"
+#include "fonts.h"
 /*add includes before */
 #ifdef __cplusplus 
    extern "C" {
 #endif
 /*add functions and variable declarations below */
+
+typedef enum{
+   SKIN_FULL = 0,
+   SKIN_1,
+   SKIN_2,
+   SKIN_EMPTY,
+   SKIN_END_OF_LIST,
+}skin_t;
+
 void display_task( const void *parameters);
 void menu_task( const void *parameters);
+uint8_t align_text_center(char* string, FontDef_t font);
+uint8_t align_text_right(char* string, FontDef_t font);
 #define DISPLAY_TASK_PERIOD 500
 /*add functions and variable declarations before */
 #ifdef __cplusplus

@@ -59,14 +59,21 @@
 #include "dcts.h"
 #include "pin_map.h"
 #include "buttons.h"
+#include "string.h"
 
 #define FEEDER 0
 #define DEFAULT_TASK_PERIOD 100
+#define RELEASE 0
 
 typedef enum{
     READ_FLOAT_SIGNED = 0,
     READ_FLOAT_UNSIGNED,
 }read_float_bkp_sign_t;
+
+uint32_t us_cnt_H = 0;
+navigation_t navigation_style = MENU_NAVIGATION;
+edit_val_t edit_val = {0};
+saved_to_flash_t config;
 
 
 /* Private variables ---------------------------------------------------------*/
@@ -84,6 +91,8 @@ osThreadId controlTaskHandle;
 
 
 /* Private function prototypes -----------------------------------------------*/
+
+void dcts_init (void);
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_IWDG_Init(void);
@@ -139,8 +148,8 @@ int main(void){
     osThreadDef(buttons_task, buttons_task, osPriorityNormal, 0, 128);
     buttonsTaskHandle = osThreadCreate(osThread(buttons_task), NULL);
 
-    osThreadDef(menu_task, menu_task, osPriorityNormal, 0, 364);
-    menuTaskHandle = osThreadCreate(osThread(menu_task), NULL);
+    /*osThreadDef(menu_task, menu_task, osPriorityNormal, 0, 364);
+    menuTaskHandle = osThreadCreate(osThread(menu_task), NULL);*/
 
 #endif
 
@@ -151,6 +160,55 @@ int main(void){
 
     }
 
+}
+
+void dcts_init (void) {
+
+    dcts.dcts_id = DCTS_ID_COMBINED;
+    strcpy (dcts.dcts_ver, "0.0.1");
+    strcpy (dcts.dcts_name, "Thermostat");
+    strcpy (dcts.dcts_name_cyr, "Термостат");
+    dcts.dcts_address = 0x0B;
+    dcts.dcts_rtc.day = 1;
+    dcts.dcts_rtc.month = 1;
+    dcts.dcts_rtc.year = 2000;
+    dcts.dcts_rtc.weekday = 6;
+    dcts.dcts_rtc.hour = 12;
+    dcts.dcts_rtc.minute = 0;
+    dcts.dcts_rtc.second = 0;
+    /*uint16_t read = read_bkp(0);
+    if(read == RTC_KEY){
+        dcts.dcts_rtc.state = RTC_STATE_READY;
+    }else{
+        save_to_bkp(0, RTC_KEY);
+        dcts.dcts_rtc.state = RTC_STATE_SET;
+    }*/
+    dcts.dcts_pwr = 0.0f;
+    dcts.dcts_meas_num = MEAS_NUM;
+    dcts.dcts_rele_num = RELE_NUM;
+    dcts.dcts_act_num  = ACT_NUM;
+    dcts.dcts_alrm_num = ALRM_NUM;
+
+    //meas_channels
+
+    dcts_meas_channel_init(TMPR_FLOOR_GRAD, "Tmpr floor", "Температура пола", "°C", "°C");
+    dcts_meas_channel_init(TMPR_FLOOR_RES, "Tmpr floor RES", "Температура пола сопр", "Ohm", "Ом");
+    dcts_meas_channel_init(TMPR_FLOOR_ADC, "Tmpr floor ADC", "Температура пола АЦП", "ADC", "АЦП");
+    dcts_meas_channel_init(TMPR_FLOOR_VLT, "Tmpr floor Vlt", "Температура пола напр.", "V", "В");
+    dcts_meas_channel_init(TMPR_SEM_GRAD, "Tmpr sem", "Температура семистора", "°C", "°C");
+    dcts_meas_channel_init(TMPR_SEM_ADC, "Tmpr sem ADC", "Температура семистора АЦП", "ADC", "АЦП");
+    dcts_meas_channel_init(TMPR_SEM_VLT, "Tmpr sem Vlt", "Температура семистора напр.", "V", "В");
+    dcts_meas_channel_init(VREF_VLT, "Vref V", "Опорное напр. В", "V", "В");
+    dcts_meas_channel_init(VBAT_VLT, "RTC battery V", "Батарейка В", "V", "В");
+
+    //act_channels
+
+    dcts_act_channel_init(HEATING, "Heating", "Температура пола", "°C", "°C");
+    dcts_act_channel_init(SEMISTOR, "Semistor control", "Температура ключа", "°C", "°C");
+
+    //rele_channels
+
+    dcts_rele_channel_init(HEATER, "Heater", "Нагреватель");
 }
 
 /**
@@ -648,6 +706,12 @@ static float read_float_bkp(u8 bkp_num, u8 sign){
         sprintf(buf, "%d", data);
     }
     return atoff(buf);
+}
+
+void refresh_watchdog(void){
+#if(RELEASE == 1)
+    MX_IWDG_Init();
+#endif//RELEASE
 }
 
 #ifdef  USE_FULL_ASSERT
