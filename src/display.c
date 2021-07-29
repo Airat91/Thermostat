@@ -84,6 +84,15 @@ static const char manual_auto_descr[2][10] = {
     "Ручной",
     "Авто",
 };
+static const char weekday_descr[7][3] = {
+    "Пн",
+    "Вт",
+    "Ср",
+    "Чт",
+    "Пт",
+    "Сб",
+    "Вс",
+};
 /*enum menu_page_t {
     PAGE_CLOCK,
     PAGE_HYSTERESIS,
@@ -148,7 +157,6 @@ void display_task( const void *parameters){
                 value_print(tick);
             }
         }
-
         SSD1306_UpdateScreen();
         /*if((LCD.auto_off != 0)&&(LCD.backlight == LCD_BACKLIGHT_ON)){
             LCD.auto_off_timeout += display_task_period;
@@ -345,7 +353,7 @@ static void main_page_print(u8 tick, skin_t skin){
     switch (skin) {
     case SKIN_FULL:
         if(sensor_state.error == SENSOR_OK){
-            sprintf(buff,"%2.1f", (double)dcts_act[0].meas_value);
+            sprintf(buff,"%2.1f", (double)dcts_act[HEATING].meas_value);
             SSD1306_GotoXY(0, 14);
             SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
         }else if(sensor_state.error == SENSOR_BREAK){
@@ -367,14 +375,14 @@ static void main_page_print(u8 tick, skin_t skin){
         }
 
         if(dcts_act[0].state.control == TRUE){
-            sprintf(buff,"Уст %2.0f%s", (double)dcts_act[0].set_value, dcts_act[0].unit);
+            sprintf(buff,"Уст %2.0f%s", (double)dcts_act[HEATING].set_value, dcts_act[HEATING].unit);
         }else{
             sprintf(buff,"Выключен");
         }
         SSD1306_GotoXY(70, 16);
         SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
-        sprintf(buff,"Рег%3.0f%s", (double)dcts_meas[1].value, dcts_meas[1].unit);
+        sprintf(buff,"Рег%3.0f%s", (double)dcts_meas[TMPR_SEM_GRAD].value, dcts_meas[TMPR_SEM_GRAD].unit);
         SSD1306_GotoXY(70, 29);
         SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
@@ -453,27 +461,27 @@ static void info_print (void){
     char string[50];
     print_header();
 
-    sprintf(string, "Имя:%s",dcts.dcts_name_cyr);
-    SSD1306_GotoXY(2,44);
-    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+    sprintf(string, "Имя:%s",dcts.dcts_name);
+    SSD1306_GotoXY(2,13);
+    SSD1306_Puts(string,&Font_5x7,SSD1306_COLOR_WHITE);
     sprintf(string, "Адрес:%d",dcts.dcts_address);
-    SSD1306_GotoXY(2,36);
-    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+    SSD1306_GotoXY(2,21);
+    SSD1306_Puts(string,&Font_5x7,SSD1306_COLOR_WHITE);
     sprintf(string, "Версия:%s",dcts.dcts_ver);
-    SSD1306_GotoXY(2,28);
-    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+    SSD1306_GotoXY(2,29);
+    SSD1306_Puts(string,&Font_5x7,SSD1306_COLOR_WHITE);
     sprintf(string, "Питание:%.1fВ",(double)dcts.dcts_pwr);
-    SSD1306_GotoXY(2,20);
-    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+    SSD1306_GotoXY(2,37);
+    SSD1306_Puts(string,&Font_5x7,SSD1306_COLOR_WHITE);
     sprintf(string, "Батарейка:%.1fВ",(double)dcts_meas[VBAT_VLT].value);
-    SSD1306_GotoXY(2,12);
-    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+    SSD1306_GotoXY(2,45);
+    SSD1306_Puts(string,&Font_5x7,SSD1306_COLOR_WHITE);
     sprintf(string, "%02d:%02d:%02d", dcts.dcts_rtc.hour, dcts.dcts_rtc.minute, dcts.dcts_rtc.second);
-    SSD1306_GotoXY(70,44);
-    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+    SSD1306_GotoXY(75,21);
+    SSD1306_Puts(string,&Font_5x7,SSD1306_COLOR_WHITE);
     sprintf(string, "%02d.%02d.%04d", dcts.dcts_rtc.day, dcts.dcts_rtc.month, dcts.dcts_rtc.year);
-    SSD1306_GotoXY(70,36);
-    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+    SSD1306_GotoXY(75,13);
+    SSD1306_Puts(string,&Font_5x7,SSD1306_COLOR_WHITE);
 
     print_back();
 }
@@ -483,8 +491,8 @@ static void print_header(void){
     //print header
     menuItem* temp = selectedMenuItem->Parent;
     sprintf(string, temp->Text);
-    SSD1306_DrawFilledRectangle(0,53,128,10, SSD1306_COLOR_WHITE);
-    SSD1306_GotoXY(align_text_center(string, Font_7x10),52);
+    SSD1306_DrawFilledRectangle(0,0,128,10, SSD1306_COLOR_WHITE);
+    SSD1306_GotoXY(align_text_center(string, Font_7x10),1);
     SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_BLACK);
 }
 
@@ -497,20 +505,24 @@ static void menu_page_print(u8 tick){
         //print previous
         temp = selectedMenuItem->Previous;
         sprintf(string, temp->Text);
-        SSD1306_GotoXY(align_text_center(string, Font_7x10),39);
+        SSD1306_GotoXY(align_text_center(string, Font_7x10),14);
         SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
     }
 
     //print selected
     sprintf(string, selectedMenuItem->Text);
-    SSD1306_GotoXY(align_text_center(string, Font_7x10),26);
+    SSD1306_GotoXY(align_text_center(string, Font_7x10),28);
     SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
-    SSD1306_DrawRectangle(5,26,115,12,SSD1306_COLOR_WHITE);
-    //print next
-    temp = selectedMenuItem->Next;
-    sprintf(string, temp->Text);
-    SSD1306_GotoXY(align_text_center(string, Font_7x10),14);
-    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+    SSD1306_DrawRectangle(1,25,126,14,SSD1306_COLOR_WHITE);
+
+    temp = selectedMenuItem->Parent;
+    if(temp->Child_num >= 2){
+        //print next
+        temp = selectedMenuItem->Next;
+        sprintf(string, temp->Text);
+        SSD1306_GotoXY(align_text_center(string, Font_7x10),42);
+        SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+    }
 
     print_back();
     print_enter_right();
@@ -528,42 +540,47 @@ static void value_print(u8 tick){
         //print previous name
         temp = selectedMenuItem->Previous;
         sprintf(string, temp->Text);
-        SSD1306_GotoXY(2,39);
+        SSD1306_GotoXY(2,14);
         SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
-        SSD1306_DrawFilledRectangle(80,39,47,11,SSD1306_COLOR_WHITE);
+        SSD1306_DrawFilledRectangle(80,14,47,11,SSD1306_COLOR_BLACK);
         prev = get_param_value(string, temp->Page);
-        SSD1306_GotoXY(align_text_right(string,Font_7x10),39);
+        SSD1306_GotoXY(align_text_right(string,Font_7x10),14);
         SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+
         if(prev == -2){
             // invalid value
-            SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+            SSD1306_DrawLine(98,19,127,19,SSD1306_COLOR_WHITE);
         }
     }
 
     //print selected name
     sprintf(string, selectedMenuItem->Text);
-    SSD1306_GotoXY(2,26);
-    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+    SSD1306_GotoXY(2,28);
+    SSD1306_print_ticker(string,&Font_7x10,SSD1306_COLOR_WHITE, 11, tick);
+    SSD1306_InvertRectangle(1,25,79,14);
     cur = get_param_value(string, selectedMenuItem->Page);
-    SSD1306_GotoXY(align_text_right(string,Font_7x10),26);
+    SSD1306_GotoXY(align_text_right(string,Font_7x10),28);
     SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
     if(cur == -2){
         // invalid value
-        SSD1306_DrawLine(84,32,127,32,SSD1306_COLOR_WHITE);
+        SSD1306_DrawLine(98,33,127,33,SSD1306_COLOR_WHITE);
     }
 
-
-    //print next name
-    temp = selectedMenuItem->Next;
-    sprintf(string, temp->Text);
-    SSD1306_GotoXY(2,14);
-    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
-    next = get_param_value(string, temp->Page);
-    SSD1306_GotoXY(align_text_right(string,Font_7x10),14);
-    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
-    if(next == -2){
-        // invalid value
-        SSD1306_DrawLine(84,32,127,32,SSD1306_COLOR_WHITE);
+    temp = selectedMenuItem->Parent;
+    if(temp->Child_num >= 2){
+        //print next name
+        temp = selectedMenuItem->Next;
+        sprintf(string, temp->Text);
+        SSD1306_GotoXY(2,42);
+        SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+        SSD1306_DrawFilledRectangle(80,42,47,11,SSD1306_COLOR_BLACK);
+        next = get_param_value(string, temp->Page);
+        SSD1306_GotoXY(align_text_right(string,Font_7x10),42);
+        SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+        if(next == -2){
+            // invalid value
+            SSD1306_DrawLine(98,47,127,49,SSD1306_COLOR_WHITE);
+        }
     }
 
     print_back();
@@ -576,9 +593,9 @@ static void value_print(u8 tick){
     }else if(navigation_style == DIGIT_EDIT){
         print_enter_ok();
         if(edit_val.digit < 0){
-            //LCD_invert_area(127-(u8)(edit_val.digit+edit_val.select_shift)*edit_val.select_width,26,127-(u8)(edit_val.digit+edit_val.select_shift-1)*edit_val.select_width,38);
+            SSD1306_InvertRectangle(127-(u8)(edit_val.digit+edit_val.select_shift)*edit_val.select_width,25,edit_val.select_width,14);
         }else{
-            //LCD_invert_area(127-(u8)(edit_val.digit+edit_val.select_shift+1)*edit_val.select_width,26,127-(u8)(edit_val.digit+edit_val.select_shift)*edit_val.select_width,38);
+            SSD1306_InvertRectangle(127-(u8)(edit_val.digit+edit_val.select_shift+1)*edit_val.select_width,25,edit_val.select_width,14);
         }
     }
 }
@@ -586,84 +603,48 @@ static void value_print(u8 tick){
 static void print_back(void){
     char string[100];
     sprintf(string, "<назад");
-    SSD1306_DrawFilledRectangle(0,0,30,8,SSD1306_COLOR_WHITE);
-    SSD1306_GotoXY(0,0);
-    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_BLACK);
+    SSD1306_DrawFilledRectangle(0,55,30,8,SSD1306_COLOR_WHITE);
+    SSD1306_GotoXY(0,56);
+    SSD1306_Puts(string,&Font_5x7,SSD1306_COLOR_BLACK);
 }
 
 static void print_enter_right(void){
     char string[100];
     sprintf(string, "выбор>");
-    SSD1306_DrawFilledRectangle(97,0,30,8,SSD1306_COLOR_WHITE);
-    SSD1306_GotoXY(align_text_right(string,Font_5x7),0);
-    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_BLACK);
+    SSD1306_DrawFilledRectangle(97,55,30,8,SSD1306_COLOR_WHITE);
+    SSD1306_GotoXY(align_text_right(string,Font_5x7),56);
+    SSD1306_Puts(string,&Font_5x7,SSD1306_COLOR_BLACK);
 }
 
 static void print_enter_ok(void){
     char string[100];
     sprintf(string, "ввод*");
-    SSD1306_DrawFilledRectangle(51,0,25,8,SSD1306_COLOR_WHITE);
-    SSD1306_GotoXY(align_text_center(string,Font_5x7),0);
-    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_BLACK);
+    SSD1306_DrawFilledRectangle(51,55,25,8,SSD1306_COLOR_WHITE);
+    SSD1306_GotoXY(align_text_center(string,Font_5x7),56);
+    SSD1306_Puts(string,&Font_5x7,SSD1306_COLOR_BLACK);
 }
 
 static void print_change(void){
     char string[100];
     sprintf(string, "изменить>");
-    SSD1306_DrawFilledRectangle(82,0,45,8,SSD1306_COLOR_WHITE);
-    SSD1306_GotoXY(align_text_right(string,Font_5x7),0);
-    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_BLACK);
+    SSD1306_DrawFilledRectangle(82,55,45,8,SSD1306_COLOR_WHITE);
+    SSD1306_GotoXY(align_text_right(string,Font_5x7),56);
+    SSD1306_Puts(string,&Font_5x7,SSD1306_COLOR_BLACK);
 }
 
 
 u8 display_time(u8 y){
     char buff[20] = {0};
-    char weekday[3] = {0};
-    switch (dcts.dcts_rtc.weekday) {
-    case 1:
-        strcpy(weekday, "Пн");
-        break;
-    case 2:
-        strcpy(weekday, "Вт");
-        break;
-    case 3:
-        strcpy(weekday, "Ср");
-        break;
-    case 4:
-        strcpy(weekday, "Чт");
-        break;
-    case 5:
-        strcpy(weekday, "Пт");
-        break;
-    case 6:
-        strcpy(weekday, "Сб");
-        break;
-    case 7:
-        strcpy(weekday, "Вс");
-        break;
-    }
-    sprintf(buff,"%2d.%2d.%4d ", dcts.dcts_rtc.day, dcts.dcts_rtc.month, dcts.dcts_rtc.year);
-    if(dcts.dcts_rtc.day < 10){
-        buff[0] = '0';
-    }
-    if(dcts.dcts_rtc.month < 10){
-        buff[3] = '0';
-    }
+    sprintf(buff,"%02d.%02d.%04d ", dcts.dcts_rtc.day, dcts.dcts_rtc.month, dcts.dcts_rtc.year);
     SSD1306_GotoXY(0, y);
-    SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+    SSD1306_Puts(buff, &Font_5x7, SSD1306_COLOR_WHITE);
 
-    SSD1306_GotoXY(74, y);
-    SSD1306_Puts(weekday, &Font_7x10, SSD1306_COLOR_WHITE);
+    SSD1306_GotoXY(70, y);
+    SSD1306_Puts(weekday_descr[dcts.dcts_rtc.weekday], &Font_5x7, SSD1306_COLOR_WHITE);
 
-    sprintf(buff,"%2d:%2d", dcts.dcts_rtc.hour, dcts.dcts_rtc.minute);
-    if(dcts.dcts_rtc.hour < 10){
-        buff[0] = '0';
-    }
-    if(dcts.dcts_rtc.minute < 10){
-        buff[3] = '0';
-    }
-    SSD1306_GotoXY(92, y);
-    SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+    sprintf(buff,"%02d:%02d:%02d", dcts.dcts_rtc.hour, dcts.dcts_rtc.minute, dcts.dcts_rtc.second);
+    SSD1306_GotoXY(align_text_right(buff, Font_5x7), y);
+    SSD1306_Puts(buff, &Font_5x7, SSD1306_COLOR_WHITE);
 
     return 0x00;
 }
@@ -1147,7 +1128,7 @@ uint8_t align_text_center(char* string, FontDef_t font){
  */
 uint8_t align_text_right(char* string, FontDef_t font){
     uint8_t len = (uint8_t)strlen(string);
-    return (uint8_t)(128-len*font.FontWidth);
+    return (uint8_t)(127-len*font.FontWidth);
 }
 
 /**
@@ -1274,7 +1255,7 @@ static void set_edit_value(menu_page_t page){
         edit_val.val_min.vfloat = 0.0;
         edit_val.val_max.vfloat = 40.0;
         edit_val.p_val.p_float = &dcts_act[HEATING].set_value;
-        edit_val.select_shift = 3;
+        edit_val.select_shift = 4;
         edit_val.select_width = Font_7x10.FontWidth;
         break;
     case ACT_SET_1:
@@ -1285,7 +1266,7 @@ static void set_edit_value(menu_page_t page){
         edit_val.val_min.vfloat = 0.0;
         edit_val.val_max.vfloat = 100.0;
         edit_val.p_val.p_float = &dcts_act[SEMISTOR].set_value;
-        edit_val.select_shift = 3;
+        edit_val.select_shift = 4;
         edit_val.select_width = Font_7x10.FontWidth;
         break;
     case ACT_HYST_0:
@@ -1296,7 +1277,7 @@ static void set_edit_value(menu_page_t page){
         edit_val.val_min.vfloat = 0.0;
         edit_val.val_max.vfloat = 100.0;
         edit_val.p_val.p_float = &dcts_act[HEATING].hysteresis;
-        edit_val.select_shift = 3;
+        edit_val.select_shift = 4;
         edit_val.select_width = Font_7x10.FontWidth;
         break;
     case ACT_HYST_1:
@@ -1307,7 +1288,7 @@ static void set_edit_value(menu_page_t page){
         edit_val.val_min.vfloat = 0.0;
         edit_val.val_max.vfloat = 100.0;
         edit_val.p_val.p_float = &dcts_act[SEMISTOR].hysteresis;
-        edit_val.select_shift = 3;
+        edit_val.select_shift = 4;
         edit_val.select_width = Font_7x10.FontWidth;
         break;
     case RELE_AUTO_MAN_0:

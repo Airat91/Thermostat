@@ -174,17 +174,7 @@ char SSD1306_Putc(char ch, FontDef_t* Font, SSD1306_COLOR_t color) {
 		return 0;
 	}
 	
-	/* Go through font */
-    /*for (i = 0; i < Font->FontHeight; i++) {
-        b = Font->data[(ch - Font->shift) * Font->FontHeight + i];
-		for (j = 0; j < Font->FontWidth; j++) {
-			if ((b << j) & 0x8000) {
-				SSD1306_DrawPixel(SSD1306.CurrentX + j, (SSD1306.CurrentY + i), (SSD1306_COLOR_t) color);
-			} else {
-				SSD1306_DrawPixel(SSD1306.CurrentX + j, (SSD1306.CurrentY + i), (SSD1306_COLOR_t)!color);
-			}
-		}
-    }*/
+    /* Go through font */
 
     uint16_t data = 0;
     for (uint8_t line_num = 1; line_num < (Font->FontHeight+1); line_num++) {
@@ -362,6 +352,47 @@ void SSD1306_DrawFilledRectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
 	}
 }
 
+void SSD1306_InvertRectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h){
+    //uint8_t i;
+    uint16_t line, position;
+    //uint8_t byte, bit;
+
+    /* Check input parameters */
+    if (
+        x >= SSD1306_WIDTH ||
+        y >= SSD1306_HEIGHT
+    ) {
+        /* Return error */
+        return;
+    }
+
+    /* Check width and height */
+    if ((x + w) >= SSD1306_WIDTH) {
+        w = SSD1306_WIDTH - x;
+    }
+    if ((y + h) >= SSD1306_HEIGHT) {
+        h = SSD1306_HEIGHT - y;
+    }
+
+    for (line = y; line < y + h; line++) {
+        for (position = x; position < x + w; position++) {
+            /*byte = (uint8_t)(position / 8);
+            bit = (uint8_t)(position % 8);*/
+            if(SSD1306_Buffer[position + line / 8 * SSD1306_WIDTH] & (1 << (line % 8))){
+                SSD1306_DrawPixel(position, line, SSD1306_COLOR_BLACK);
+            }else{
+                SSD1306_DrawPixel(position, line, SSD1306_COLOR_WHITE);
+            }
+        }
+    }
+
+    /*if (color == SSD1306_COLOR_WHITE) {
+        SSD1306_Buffer[x + (y / 8) * SSD1306_WIDTH] |= 1 << (y % 8);
+    } else {
+        SSD1306_Buffer[x + (y / 8) * SSD1306_WIDTH] &= ~(1 << (y % 8));
+    }*/
+}
+
 void SSD1306_DrawTriangle(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t x3, uint16_t y3, SSD1306_COLOR_t color) {
 	/* Draw lines */
 	SSD1306_DrawLine(x1, y1, x2, y2, color);
@@ -489,6 +520,54 @@ void SSD1306_DrawFilledCircle(int16_t x0, int16_t y0, int16_t r, SSD1306_COLOR_t
         SSD1306_DrawLine(x0 + y, y0 - x, x0 - y, y0 - x, c);
     }
 }
+/**
+ * @brief Pring part of string as ticker
+ * @param string - pionter to string buffer
+ * @param font - pointer to structure with used font
+ * @param color - color used for drawing = {LCD_COLOR_BLACK, LCD_COLOR_WHITE}
+ * @param char_len - number of chars for show
+ * @param tick
+ * @return  0 - OK,\n
+ *          -1 - char_len > len of string,\n
+ *          -2 - have not free area for next char\n
+ */
+int SSD1306_print_ticker(char* string, FontDef_t* font, SSD1306_COLOR_t color, uint8_t char_len, uint8_t tick){
+    int result = 0;
+    uint8_t len = (uint8_t)strlen(string);
+    uint8_t step_num;
+    uint8_t step;
+    if(char_len > len){
+        result = -1;
+        SSD1306_Puts(string, font, color);
+    }else{
+        step_num = (len - char_len)*2 + 4;
+        step = tick%step_num+1;
+
+        if(step <= 1){
+            step = 1;
+        }else if((step > 1)&&(step <= (step_num/2 - 1))){
+            step --;
+        }else if((step > (step_num/2 - 1))&&(step <= (step_num/2 + 1))){
+            step = (len - char_len)+1;
+        }else if((step > step_num/2 + 1)&&(step <= step_num - 1)){
+            step = step_num - step;
+        }else if(step > step_num - 1){
+            step = 1;
+        }
+        string += step - 1;
+        while (char_len) {
+            if (SSD1306_Putc(*string, font, color) != 0) {
+                string++;
+                char_len--;
+            }else{
+                result = -2;
+            }
+            //SSD1306_UpdateScreen();
+        }
+    }
+    return result;
+}
+
  
 void SSD1306_ON(void) {
 	SSD1306_WRITECOMMAND(0x8D);  

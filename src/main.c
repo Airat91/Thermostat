@@ -1,4 +1,4 @@
-п»ї
+
 /**
   ******************************************************************************
   * @file           : main.c
@@ -167,7 +167,7 @@ void dcts_init (void) {
     dcts.dcts_id = DCTS_ID_COMBINED;
     strcpy (dcts.dcts_ver, "0.0.1");
     strcpy (dcts.dcts_name, "Thermostat");
-    strcpy (dcts.dcts_name_cyr, "РўРµСЂРјРѕСЃС‚Р°С‚");
+    strcpy (dcts.dcts_name_cyr, "Термостат");
     dcts.dcts_address = 0x0B;
     dcts.dcts_rtc.day = 1;
     dcts.dcts_rtc.month = 1;
@@ -191,24 +191,24 @@ void dcts_init (void) {
 
     //meas_channels
 
-    dcts_meas_channel_init(TMPR_FLOOR_GRAD, "Tmpr floor", "РўРµРјРїРµСЂР°С‚СѓСЂР° РїРѕР»Р°", "В°C", "В°C");
-    dcts_meas_channel_init(TMPR_FLOOR_RES, "Tmpr floor RES", "РўРµРјРїРµСЂР°С‚СѓСЂР° РїРѕР»Р° СЃРѕРїСЂ", "Ohm", "РћРј");
-    dcts_meas_channel_init(TMPR_FLOOR_ADC, "Tmpr floor ADC", "РўРµРјРїРµСЂР°С‚СѓСЂР° РїРѕР»Р° РђР¦Рџ", "ADC", "РђР¦Рџ");
-    dcts_meas_channel_init(TMPR_FLOOR_VLT, "Tmpr floor Vlt", "РўРµРјРїРµСЂР°С‚СѓСЂР° РїРѕР»Р° РЅР°РїСЂ.", "V", "Р’");
-    dcts_meas_channel_init(TMPR_SEM_GRAD, "Tmpr sem", "РўРµРјРїРµСЂР°С‚СѓСЂР° СЃРµРјРёСЃС‚РѕСЂР°", "В°C", "В°C");
-    dcts_meas_channel_init(TMPR_SEM_ADC, "Tmpr sem ADC", "РўРµРјРїРµСЂР°С‚СѓСЂР° СЃРµРјРёСЃС‚РѕСЂР° РђР¦Рџ", "ADC", "РђР¦Рџ");
-    dcts_meas_channel_init(TMPR_SEM_VLT, "Tmpr sem Vlt", "РўРµРјРїРµСЂР°С‚СѓСЂР° СЃРµРјРёСЃС‚РѕСЂР° РЅР°РїСЂ.", "V", "Р’");
-    dcts_meas_channel_init(VREF_VLT, "Vref V", "РћРїРѕСЂРЅРѕРµ РЅР°РїСЂ. Р’", "V", "Р’");
-    dcts_meas_channel_init(VBAT_VLT, "RTC battery V", "Р‘Р°С‚Р°СЂРµР№РєР° Р’", "V", "Р’");
+    dcts_meas_channel_init(TMPR_FLOOR_GRAD, "Tmpr floor", "Температура пола", "°C", "°C");
+    dcts_meas_channel_init(TMPR_FLOOR_RES, "Tmpr floor RES", "Температура пола сопр", "Ohm", "Ом");
+    dcts_meas_channel_init(TMPR_FLOOR_ADC, "Tmpr floor ADC", "Температура пола АЦП", "ADC", "АЦП");
+    dcts_meas_channel_init(TMPR_FLOOR_VLT, "Tmpr floor Vlt", "Температура пола напр.", "V", "В");
+    dcts_meas_channel_init(TMPR_SEM_GRAD, "Tmpr sem", "Температура семистора", "°C", "°C");
+    dcts_meas_channel_init(TMPR_SEM_ADC, "Tmpr sem ADC", "Температура семистора АЦП", "ADC", "АЦП");
+    dcts_meas_channel_init(TMPR_SEM_VLT, "Tmpr sem Vlt", "Температура семистора напр.", "V", "В");
+    dcts_meas_channel_init(VREF_VLT, "Vref V", "Опорное напр. В", "V", "В");
+    dcts_meas_channel_init(VBAT_VLT, "RTC battery V", "Батарейка В", "V", "В");
 
     //act_channels
 
-    dcts_act_channel_init(HEATING, "Heating", "РўРµРјРїРµСЂР°С‚СѓСЂР° РїРѕР»Р°", "В°C", "В°C");
-    dcts_act_channel_init(SEMISTOR, "Semistor control", "РўРµРјРїРµСЂР°С‚СѓСЂР° РєР»СЋС‡Р°", "В°C", "В°C");
+    dcts_act_channel_init(HEATING, "Heating", "Температура пола", "°C", "°C");
+    dcts_act_channel_init(SEMISTOR, "Semistor control", "Температура ключа", "°C", "°C");
 
     //rele_channels
 
-    dcts_rele_channel_init(HEATER, "Heater", "РќР°РіСЂРµРІР°С‚РµР»СЊ");
+    dcts_rele_channel_init(HEATER, "Heater", "Нагреватель");
 }
 
 /**
