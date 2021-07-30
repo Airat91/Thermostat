@@ -85,13 +85,13 @@ static const char manual_auto_descr[2][10] = {
     "јвто",
 };
 static const char weekday_descr[7][3] = {
+    "¬с",
     "ѕн",
     "¬т",
     "—р",
     "„т",
     "ѕт",
     "—б",
-    "¬с",
 };
 /*enum menu_page_t {
     PAGE_CLOCK,

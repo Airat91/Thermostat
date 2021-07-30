@@ -200,6 +200,7 @@ void _Error_Handler(char *, int);
  uint16_t uint16_pow(uint16_t x, uint16_t pow);
  float float_pow(float x, int pow);
  void refresh_watchdog(void);
+ void rtc_task(void const * argument);
 
 #endif /* __MAIN_H__ */
 
