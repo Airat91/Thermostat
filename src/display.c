@@ -52,6 +52,7 @@
 #include "stm32f1xx_ll_gpio.h"
 #include "control.h"
 #include "menu.h"
+#include "flash.h"
 
 extern IWDG_HandleTypeDef hiwdg;
 extern RTC_HandleTypeDef hrtc;
@@ -76,6 +77,7 @@ static void print_enter_ok(void);
 static void print_change(void);
 static int get_param_value(char* string, menu_page_t page);
 static void set_edit_value(menu_page_t page);
+static void save_params(void);
 static const char off_on_descr[2][10] = {
     "Âûêë.",
     "Âêë.",
@@ -149,7 +151,7 @@ void display_task( const void *parameters){
             info_print();
             break;
         case SAVE_CHANGES:
-            //save_page_print(tick);
+            save_page_print(tick);
             break;
         default:
             if(selectedMenuItem->Child_num > 0){
@@ -357,6 +359,31 @@ static void menu_page_print(u8 tick){
 
     print_back();
     print_enter_right();
+}
+
+static void save_page_print (u8 tick){
+    char string[50];
+
+    SSD1306_DrawRectangle(5,2,123,26,SSD1306_COLOR_WHITE);
+    sprintf(string, "ÑÎÕÐÀÍÅÍÈÅ ÍÎÂÛÕ");
+    SSD1306_GotoXY(align_text_center(string, Font_7x10),4);
+    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+    sprintf(string, "ÊÎÝÔÔÈÖÈÅÍÒÎÂ");
+    SSD1306_GotoXY(align_text_center(string, Font_7x10),14);
+    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+    SSD1306_GotoXY(55,42);
+    SSD1306_Putc(1,&Icon_16x16,SSD1306_COLOR_WHITE);
+    switch(tick%4){
+    case 0:
+        SSD1306_DrawFilledRectangle(55,42,16,16,SSD1306_COLOR_BLACK);
+        break;
+    case 1:
+        SSD1306_DrawFilledRectangle(55,46,16,16,SSD1306_COLOR_BLACK);
+        break;
+    case 2:
+        SSD1306_DrawFilledRectangle(55,50,16,16,SSD1306_COLOR_BLACK);
+        break;
+    }
 }
 
 static void value_print(u8 tick){
@@ -1441,13 +1468,89 @@ void navigation_task (void const * argument){
             if(LCD.auto_off == 0){
                 LCD_backlight_toggle();
             }
-        }
-        if((pressed_time[BUTTON_SET].pressed > 0)&&(pressed_time[BUTTON_SET].pressed < navigation_task_period)){
-            save_params();
         }*/
+        if(button_clamp(BUTTON_OK, 1000)){
+            save_params();
+            pressed_time[BUTTON_OK].pressed = 0;
+        }
         osDelayUntil(&last_wake_time, navigation_task_period);
     }
 }
+
+static void save_params(void){
+    static menuItem* current_menu;
+    current_menu = selectedMenuItem;
+    menuChange(&save_changes);
+
+    // store ModBus params
+    config.params.mdb_address = dcts.dcts_address;
+    // store dcts_act
+    for(uint8_t i = 0; i < ACT_NUM; i++){
+        config.params.act_set[i] = dcts_act[i].set_value;
+        config.params.act_hyst[i] = dcts_act[i].hysteresis;
+        config.params.act_enable[i] = dcts_act[i].state.control;
+    }
+    // store dcts_rele
+    for(uint8_t i = 0; i < RELE_NUM; i++){
+        config.params.rele[i] = dcts_rele[i].state.control_by_act;
+    }
+
+    int area_cnt = find_free_area();
+    if(area_cnt < 0){
+        uint32_t erase_error = 0;
+        FLASH_EraseInitTypeDef flash_erase = {0};
+        flash_erase.TypeErase = FLASH_TYPEERASE_PAGES;
+        flash_erase.NbPages = 1;
+        flash_erase.PageAddress = FLASH_SAVE_PAGE_ADDRESS;
+        HAL_FLASH_Unlock();
+        HAL_FLASHEx_Erase(&flash_erase, &erase_error);
+        HAL_FLASH_Lock();
+        area_cnt = 0;
+    }
+    for(uint8_t i = 0; i < SAVED_PARAMS_SIZE; i ++){
+        save_to_flash(area_cnt, i, &config.word[i]);
+    }
+    // reinit uart
+    //delay for show message
+    osDelay(2000);
+    menuChange(current_menu);
+}
+
+void restore_params(void){
+    int area_cnt = find_free_area();
+    if(area_cnt != 0){
+        if(area_cnt == -1){
+            // page is fill, actual values in last area
+            area_cnt = SAVE_AREA_NMB - 1;
+        }else{
+            // set last filled area number
+            area_cnt--;
+        }
+        uint16_t *addr;
+        addr = (uint32_t)(FLASH_SAVE_PAGE_ADDRESS + area_cnt*SAVE_AREA_SIZE);
+        for(uint8_t i = 0; i < SAVED_PARAMS_SIZE; i++){
+            config.word[i] = *addr;
+            addr++;
+        }
+
+        // restore dcts_address
+        dcts.dcts_address = (uint8_t)config.params.mdb_address;
+        // restore dcts_act
+        for(uint8_t i = 0; i < ACT_NUM; i++){
+            dcts_act[i].set_value = config.params.act_set[i];
+            dcts_act[i].hysteresis = config.params.act_hyst[i];
+            dcts_act[i].state.control = (uint8_t)config.params.act_enable[i];
+        }
+
+        // restore dcts_rele
+        for(uint8_t i = 0; i < RELE_NUM; i++){
+            dcts_rele[i].state.control_by_act = (uint8_t)(config.params.rele[i]);
+        }
+    }else{
+        //init default values if saved params not found
+    }
+}
+
 
 uint32_t uint32_pow(uint16_t x, uint8_t pow){
     uint32_t result = 1;

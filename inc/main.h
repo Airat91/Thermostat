@@ -138,7 +138,6 @@ void _Error_Handler(char *, int);
 
  typedef union{
      struct{
-         uint8_t  mdb_address;
          uint16_t act_enable[ACT_NUM];
          float    act_set[ACT_NUM];
          float    act_hyst[ACT_NUM];
@@ -148,6 +147,7 @@ void _Error_Handler(char *, int);
          float    load_res;
          uint8_t  backlight_lvl;
          uint8_t  auto_off;
+         uint8_t  mdb_address;
 
      }params;
      uint16_t word[SAVED_PARAMS_SIZE];

@@ -122,6 +122,7 @@ int main(void){
     MX_GPIO_Init();
     MX_IWDG_Init();
     dcts_init();
+    restore_params();
     //RTC_Init();
     MX_ADC1_Init();
     //MX_USART1_UART_Init();
@@ -542,6 +543,7 @@ void rtc_task(void const * argument){
         osDelayUntil(&last_wake_time, RTC_TASK_PERIOD);
     }
 }
+
 /* TIM2 init function */
 static void MX_TIM2_Init(void){
     TIM_ClockConfigTypeDef sClockSourceConfig;
