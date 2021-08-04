@@ -85,9 +85,9 @@ PA10     ------> USART1_RX
 
 #define MEAS_NUM 10
 #define ACT_NUM 2
-#define RELE_NUM 1
+#define RELE_NUM 2
 
-#define SAVED_PARAMS_SIZE 7
+#define SAVED_PARAMS_SIZE 17
 
 
 /* ########################## Assert Selection ############################## */
@@ -128,6 +128,7 @@ void _Error_Handler(char *, int);
 
  typedef enum {
      HEATER = 0,
+     LED,
  }dcts_rele_t;
 
  typedef enum{
@@ -137,11 +138,17 @@ void _Error_Handler(char *, int);
 
  typedef union{
      struct{
-         uint16_t mdb_address;
+         uint8_t  mdb_address;
          uint16_t act_enable[ACT_NUM];
          float    act_set[ACT_NUM];
          float    act_hyst[ACT_NUM];
          uint16_t rele[RELE_NUM];
+         uint8_t  skin;
+         uint8_t  sensor_type;
+         float    load_res;
+         uint8_t  backlight_lvl;
+         uint8_t  auto_off;
+
      }params;
      uint16_t word[SAVED_PARAMS_SIZE];
  }saved_to_flash_t;

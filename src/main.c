@@ -60,6 +60,7 @@
 #include "pin_map.h"
 #include "buttons.h"
 #include "string.h"
+#include "flash.h"
 
 #define FEEDER 0
 #define RELEASE 0
@@ -208,6 +209,7 @@ void dcts_init (void) {
     //rele_channels
 
     dcts_rele_channel_init(HEATER, "Heater", "Нагреватель");
+    dcts_rele_channel_init(LED, "Indicator", "Индикатор");
 }
 
 /**

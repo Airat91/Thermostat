@@ -4,6 +4,7 @@
 #include "FreeRTOS.h"
 #include "cmsis_os.h"
 #include "stm32f1xx_hal_gpio.h"
+#include "ssd1306.h"
 
 
 /**
@@ -16,7 +17,7 @@
   * @{
   */
 #define BUTTONS_TASK_PERIOD 1
-#define BUTTONS_NUM 7
+#define BUTTONS_NUM 5
 /**
   * @}
   */
@@ -48,11 +49,11 @@ void buttons_task (void const * argument){
                 }
                 pressed_time[button].pressed += BUTTONS_TASK_PERIOD;
                 pressed_time[button].last_state = BUTTON_PRESSED;
-                /*reset LCD backlight auto off timeout
-                LCD.auto_off_timeout = 0;
-                if(LCD.backlight == LCD_BACKLIGHT_SHUTDOWN){
-                    LCD_backlight_on();
-                }*/
+                //reset LCD backlight auto off timeout
+                SSD1306.auto_off_timeout = 0;
+                if(SSD1306.on_off == 0){
+                    SSD1306.on_off = 1;
+                }
             }else{
                 pressed_time[button].last_state = BUTTON_RELEASE;
                 //pressed_time[button].pressed = 0;

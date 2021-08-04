@@ -120,6 +120,7 @@ void display_task( const void *parameters){
     taskENTER_CRITICAL();
     HAL_IWDG_Refresh(&hiwdg);
     SSD1306_Init();
+    SSD1306.on_off = 1;
     HAL_IWDG_Refresh(&hiwdg);
     SSD1306_UpdateScreen();
     taskEXIT_CRITICAL();
@@ -157,14 +158,18 @@ void display_task( const void *parameters){
                 value_print(tick);
             }
         }
-        SSD1306_UpdateScreen();
-        /*if((LCD.auto_off != 0)&&(LCD.backlight == LCD_BACKLIGHT_ON)){
-            LCD.auto_off_timeout += display_task_period;
-            if(LCD.auto_off_timeout > (uint32_t)LCD.auto_off * 10000){
-                LCD.auto_off_timeout = 0;
-                LCD_backlight_shutdown();
+        if(SSD1306.on_off == 1){
+            SSD1306_UpdateScreen();
+        }
+        if((config.params.auto_off != 0)&&(SSD1306.on_off == 1)){
+            SSD1306.auto_off_timeout += display_task_period;
+            if(SSD1306.auto_off_timeout > (uint32_t)config.params.auto_off * 10000){
+                SSD1306.auto_off_timeout = 0;
+                SSD1306.on_off = 0;
+                SSD1306_Fill(SSD1306_COLOR_BLACK);
+                SSD1306_UpdateScreen();
             }
-        }*/
+        }
         if(tick_2 == 500/display_task_period){
             tick_2 = 0;
             tick++;
@@ -173,180 +178,6 @@ void display_task( const void *parameters){
         osDelayUntil(&last_wake_time, display_task_period);
     }
 }
-
-
-        /* Buttons read */
-        /*if (pressed_time.up){
-            if(dcts_act[0].set_value < MAX_SET_TEMP){
-                dcts_act[0].set_value += 1.0f;
-                HAL_PWR_EnableBkUpAccess();
-                BKP->DR2 = (uint32_t)dcts_act[0].set_value;
-                HAL_PWR_DisableBkUpAccess();
-            }
-        }
-        if (pressed_time.down){
-            if(dcts_act[0].set_value > MIN_SET_TEMP){
-                dcts_act[0].set_value -= 1.0f;
-                HAL_PWR_EnableBkUpAccess();
-                BKP->DR2 = (uint32_t)dcts_act[0].set_value;
-                HAL_PWR_DisableBkUpAccess();
-            }
-        }
-        if (pressed_time.left){
-            if(skin == 0){
-                skin = SKIN_END_OF_LIST - 1;
-            }else{
-                skin--;
-            }
-            SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
-            SSD1306_UpdateScreen();
-        }
-        if (pressed_time.right){
-            if(skin == SKIN_END_OF_LIST - 1){
-                skin = SKIN_FULL;
-            }else{
-                skin++;
-            }
-            SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
-            SSD1306_UpdateScreen();
-        }
-        if (pressed_time.ok){
-            SSD1306_DrawFilledRectangle(0,0,128,64,SSD1306_COLOR_BLACK);    // clear display
-            SSD1306_UpdateScreen();
-            vTaskSuspend(buttonsTaskHandle);
-            pressed_time.ok = 0;
-            vTaskResume(menuTaskHandle);
-            vTaskSuspend(NULL);
-        }
-        if (pressed_time.up && pressed_time.down){
-            if(dcts_act[0].state.control == TRUE){
-                dcts_act[0].state.control = FALSE;
-            }else if(dcts_act[0].state.control == FALSE){
-                dcts_act[0].state.control = TRUE;
-            }
-
-            HAL_PWR_EnableBkUpAccess();
-            BKP->DR3 = (uint32_t)dcts_act[0].state.control;
-            HAL_PWR_DisableBkUpAccess();
-        }*/
-
-        /* Print main screen */
-        /*if(skin == SKIN_FULL){  // Full information
-
-            if(sensor_state.error == SENSOR_OK){
-                sprintf(buff,"%2.1f", (double)dcts_act[0].meas_value);
-                SSD1306_GotoXY(0, 14);
-                SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
-            }else if(sensor_state.error == SENSOR_BREAK){
-                SSD1306_DrawFilledRectangle(0,14,64,26,SSD1306_COLOR_BLACK);    // clear area
-                sprintf(buff,"Œ¡–€¬");
-                SSD1306_GotoXY(15, 15);
-                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-                sprintf(buff,"ƒ¿“◊» ¿");
-                SSD1306_GotoXY(7, 29);
-                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-            }else if(sensor_state.error == SENSOR_SHORT){
-                SSD1306_DrawFilledRectangle(0,14,64,26,SSD1306_COLOR_BLACK);    // clear area
-                sprintf(buff,"«¿Ã€ ¿Õ»≈");
-                SSD1306_GotoXY(0, 15);
-                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-                sprintf(buff,"ƒ¿“◊» ¿");
-                SSD1306_GotoXY(7, 29);
-                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-            }
-
-            if(dcts_act[0].state.control == TRUE){
-                sprintf(buff,"”ÒÚ %2.0f%s", (double)dcts_act[0].set_value, dcts_act[0].unit);
-            }else{
-                sprintf(buff,"¬˚ÍÎ˛˜ÂÌ");
-            }
-            SSD1306_GotoXY(70, 16);
-            SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-
-            sprintf(buff,"–Â„%3.0f%s", (double)dcts_meas[1].value, dcts_meas[1].unit);
-            SSD1306_GotoXY(70, 29);
-            SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-
-            display_time(0);
-
-        }else if(skin == SKIN_1){    // Only current and required temperature
-
-            if(sensor_state.error == SENSOR_OK){
-                sprintf(buff,"%2.1f", (double)dcts_act[0].meas_value);
-                SSD1306_GotoXY(0, 14);
-                SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
-            }else if(sensor_state.error == SENSOR_BREAK){
-                SSD1306_DrawFilledRectangle(0,14,64,26,SSD1306_COLOR_BLACK);    // clear area
-                sprintf(buff,"Œ¡–€¬");
-                SSD1306_GotoXY(15, 15);
-                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-                sprintf(buff,"ƒ¿“◊» ¿");
-                SSD1306_GotoXY(7, 29);
-                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-            }else if(sensor_state.error == SENSOR_SHORT){
-                SSD1306_DrawFilledRectangle(0,14,64,26,SSD1306_COLOR_BLACK);    // clear area
-                sprintf(buff,"«¿Ã€ ¿Õ»≈");
-                SSD1306_GotoXY(0, 15);
-                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-                sprintf(buff,"ƒ¿“◊» ¿");
-                SSD1306_GotoXY(7, 29);
-                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-            }
-
-            if(dcts_act[0].state.control == TRUE){
-                sprintf(buff,"”ÒÚ %2.0f%s", (double)dcts_act[0].set_value, dcts_act[0].unit);
-            }else {
-                sprintf(buff,"¬˚ÍÎ˛˜ÂÌ");
-            }
-            SSD1306_GotoXY(70, 16);
-            SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-
-        }else if(skin == SKIN_2){    // Current and required temperature and clock
-
-            if(sensor_state.error == SENSOR_OK){
-                sprintf(buff,"%2.1f", (double)dcts_act[0].meas_value);
-                SSD1306_GotoXY(0, 14);
-                SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
-            }else if(sensor_state.error == SENSOR_BREAK){
-                SSD1306_DrawFilledRectangle(0,14,64,26,SSD1306_COLOR_BLACK);    // clear area
-                sprintf(buff,"Œ¡–€¬");
-                SSD1306_GotoXY(15, 15);
-                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-                sprintf(buff,"ƒ¿“◊» ¿");
-                SSD1306_GotoXY(7, 29);
-                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-            }else if(sensor_state.error == SENSOR_SHORT){
-                SSD1306_DrawFilledRectangle(0,14,64,26,SSD1306_COLOR_BLACK);    // clear area
-                sprintf(buff,"«¿Ã€ ¿Õ»≈");
-                SSD1306_GotoXY(0, 15);
-                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-                sprintf(buff,"ƒ¿“◊» ¿");
-                SSD1306_GotoXY(7, 29);
-                SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-            }
-
-            if(dcts_act[0].state.control == TRUE){
-                sprintf(buff,"”ÒÚ %2.0f%s", (double)dcts_act[0].set_value, dcts_act[0].unit);
-            }else {
-                sprintf(buff,"¬˚ÍÎ˛˜ÂÌ");
-            }
-            SSD1306_GotoXY(70, 16);
-            SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-
-            display_time(0);
-        }else if(skin == SKIN_EMPTY){   // Empty screen
-
-        }
-
-        SSD1306_UpdateScreen();
-        HAL_IWDG_Refresh(&hiwdg);
-        osDelayUntil(&last_wake_time, DISPLAY_TASK_PERIOD);
-        if(eTaskGetState(buttonsTaskHandle) == eSuspended){
-            vTaskDelay(DISPLAY_TASK_PERIOD);
-            vTaskResume(buttonsTaskHandle);
-        }
-    }
-}*/
 
 static void main_page_print(u8 tick, skin_t skin){
     char buff[50];
@@ -1193,12 +1024,11 @@ static int get_param_value(char* string, menu_page_t page){
         break;
 
     case LIGHT_LVL:
-        /*sprintf(string, "%d%%", LCD.backlight_lvl*10);
-        LCD_backlight_timer_init();
-        LCD_backlight_on();*/
+        sprintf(string, "%d%%", config.params.backlight_lvl);
+        SSD1306_SET_LIGHTLEVEL(config.params.backlight_lvl*255/100);
         break;
     case AUTO_OFF:
-        //sprintf(string, "%dÒ", LCD.auto_off*10);
+        sprintf(string, "%dÒ", config.params.auto_off*10);
         break;
 
     case TIME_HOUR:
@@ -1316,26 +1146,26 @@ static void set_edit_value(menu_page_t page){
         }
         break;
     case LIGHT_LVL:
-        /*edit_val.type = VAL_UINT16;
-        edit_val.digit_max = 1;
+        edit_val.type = VAL_UINT8;
+        edit_val.digit_max = 2;
         edit_val.digit_min = 0;
         edit_val.digit = 0;
-        edit_val.val_min.uint16 = 1;
-        edit_val.val_max.uint16 = 10;
-        edit_val.p_val.p_uint16 = &LCD.backlight_lvl;
-        edit_val.select_shift = 2;
-        edit_val.select_width = Font_7x10.FontWidth;*/
+        edit_val.val_min.uint8 = 1;
+        edit_val.val_max.uint8 = 100;
+        edit_val.p_val.p_uint8 = &config.params.backlight_lvl;
+        edit_val.select_shift = 1;
+        edit_val.select_width = Font_7x10.FontWidth;
         break;
     case AUTO_OFF:
-        /*edit_val.type = VAL_UINT16;
+        edit_val.type = VAL_UINT16;
         edit_val.digit_max = 1;
         edit_val.digit_min = 0;
         edit_val.digit = 0;
-        edit_val.val_min.uint16 = 1;
-        edit_val.val_max.uint16 = 60;
-        edit_val.p_val.p_uint16 = &LCD.auto_off;
+        edit_val.val_min.uint8 = 0;
+        edit_val.val_max.uint8 = 60;
+        edit_val.p_val.p_uint8 = &config.params.auto_off;
         edit_val.select_shift = 2;
-        edit_val.select_width = Font_7x10.FontWidth;*/
+        edit_val.select_width = Font_7x10.FontWidth;
         break;
     case TIME_HOUR:
         edit_val.type = VAL_UINT8;
