@@ -121,7 +121,9 @@ int main(void){
     HAL_Init();
     SystemClock_Config();
     MX_GPIO_Init();
+#if RELEASE
     MX_IWDG_Init();
+#endif // RELEASE
     dcts_init();
     restore_params();
     //RTC_Init();
@@ -143,9 +145,9 @@ int main(void){
     osThreadDef(adc_task, adc_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
     adcTaskHandle = osThreadCreate(osThread(adc_task), NULL);
 
-    osThreadDef(control_task, control_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
-    //controlTaskHandle = osThreadCreate(osThread(control_task), NULL);
-
+    /*osThreadDef(control_task, control_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
+    controlTaskHandle = osThreadCreate(osThread(control_task), NULL);
+*/
     osThreadDef(display_task, display_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*4);
     displayTaskHandle = osThreadCreate(osThread(display_task), NULL);
 
@@ -707,7 +709,7 @@ static float read_float_bkp(u8 bkp_num, u8 sign){
 
 void refresh_watchdog(void){
 #if(RELEASE == 1)
-    MX_IWDG_Init();
+    HAL_IWDG_Refresh(&hiwdg);
 #endif//RELEASE
 }
 

@@ -120,10 +120,10 @@ void display_task( const void *parameters){
     menu_page_t last_page = selectedMenuItem->Page;
     uint32_t last_wake_time = osKernelSysTick();
     taskENTER_CRITICAL();
-    HAL_IWDG_Refresh(&hiwdg);
+    refresh_watchdog();
     SSD1306_Init();
     SSD1306.on_off = 1;
-    HAL_IWDG_Refresh(&hiwdg);
+    refresh_watchdog();
     SSD1306_UpdateScreen();
     taskEXIT_CRITICAL();
     while(1){

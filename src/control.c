@@ -208,7 +208,7 @@ void control_task( const void *parameters){
             reg_on_control();
         }
 
-        HAL_IWDG_Refresh(&hiwdg);
+        refresh_watchdog();
         osDelayUntil(&last_wake_time,CONTROL_TASK_PERIOD);
     }
 }
