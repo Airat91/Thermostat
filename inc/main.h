@@ -52,6 +52,7 @@
 #define __MAIN_H__
 
 #include "stdint.h"
+#include "cmsis_os.h"
 
 #define AIR_PORT GPIOA
 #define AIR_PIN  LL_GPIO_PIN_7
@@ -113,9 +114,9 @@ void _Error_Handler(char *, int);
      TMPR_FLOOR_RES,
      TMPR_FLOOR_ADC,
      TMPR_FLOOR_VLT,
-     TMPR_SEM_GRAD,
-     TMPR_SEM_ADC,
-     TMPR_SEM_VLT,
+     TMPR_REG_GRAD,
+     TMPR_REG_ADC,
+     TMPR_REG_VLT,
      VREF_VLT,
      VBAT_VLT,
      CONSUMPTION,
@@ -148,6 +149,7 @@ void _Error_Handler(char *, int);
          uint8_t  backlight_lvl;
          uint8_t  auto_off;
          uint8_t  mdb_address;
+         uint8_t  ctrl_rule;
 
      }params;
      uint16_t word[SAVED_PARAMS_SIZE];
@@ -195,6 +197,13 @@ void _Error_Handler(char *, int);
      uint8_t select_width;
      uint8_t select_shift;
  }edit_val_t;
+
+ extern  osThreadId defaultTaskHandle;
+ extern  osThreadId buttonsTaskHandle;
+ extern  osThreadId displayTaskHandle;
+ extern  osThreadId menuTaskHandle;
+ extern  osThreadId controlTaskHandle;
+ extern  osThreadId adcTaskHandle;
 
  extern uint32_t us_cnt_H;
  extern navigation_t navigation_style;

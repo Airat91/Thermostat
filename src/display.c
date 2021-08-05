@@ -215,7 +215,7 @@ static void main_page_print(u8 tick, skin_t skin){
         SSD1306_GotoXY(70, 16);
         SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
-        sprintf(buff,"Πεγ%3.0f%s", (double)dcts_meas[TMPR_SEM_GRAD].value, dcts_meas[TMPR_SEM_GRAD].unit);
+        sprintf(buff,"Πεγ%3.0f%s", (double)dcts_meas[TMPR_REG_GRAD].value, dcts_meas[TMPR_REG_GRAD].unit);
         SSD1306_GotoXY(70, 29);
         SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
@@ -437,7 +437,7 @@ static void value_print(u8 tick){
         SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
         if(next == -2){
             // invalid value
-            SSD1306_DrawLine(98,47,127,49,SSD1306_COLOR_WHITE);
+            SSD1306_DrawLine(98,47,127,47,SSD1306_COLOR_WHITE);
         }
     }
 

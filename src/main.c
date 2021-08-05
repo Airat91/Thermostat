@@ -50,7 +50,6 @@
 #include "main.h"
 #include "stm32f1xx_hal.h"
 #include "stdlib.h"
-#include "cmsis_os.h"
 //#include "ds18.h"
 #include "control.h"
 #include "display.h"
@@ -61,6 +60,7 @@
 #include "buttons.h"
 #include "string.h"
 #include "flash.h"
+#include "adc.h"
 
 #define FEEDER 0
 #define RELEASE 0
@@ -78,7 +78,7 @@ saved_to_flash_t config;
 
 
 /* Private variables ---------------------------------------------------------*/
-ADC_HandleTypeDef hadc1;
+//ADC_HandleTypeDef hadc1;
 IWDG_HandleTypeDef hiwdg;
 RTC_HandleTypeDef hrtc;
 TIM_HandleTypeDef htim2;
@@ -89,6 +89,7 @@ osThreadId buttonsTaskHandle;
 osThreadId displayTaskHandle;
 osThreadId menuTaskHandle;
 osThreadId controlTaskHandle;
+osThreadId adcTaskHandle;
 
 
 /* Private function prototypes -----------------------------------------------*/
@@ -98,7 +99,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_IWDG_Init(void);
 static void RTC_Init(void);
-static void MX_ADC1_Init(void);
+//static void MX_ADC1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
@@ -124,14 +125,14 @@ int main(void){
     dcts_init();
     restore_params();
     //RTC_Init();
-    MX_ADC1_Init();
+    //MX_ADC1_Init();
     //MX_USART1_UART_Init();
     //MX_TIM3_Init();
     //MX_TIM2_Init();
-    HAL_ADC_Start(&hadc1);
-    HAL_ADCEx_InjectedStart(&hadc1);
-    osThreadDef(own_task, rtc_task, osPriorityNormal, 0, 364);
-    defaultTaskHandle = osThreadCreate(osThread(own_task), NULL);
+    //HAL_ADC_Start(&hadc1);
+    //HAL_ADCEx_InjectedStart(&hadc1);
+    osThreadDef(rtc_task, rtc_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
+    defaultTaskHandle = osThreadCreate(osThread(rtc_task), NULL);
 #if FEEDER
     osThreadDef(step_task, step_task, osPriorityNormal, 0, 364);
     defaultTaskHandle = osThreadCreate(osThread(step_task), NULL);
@@ -139,18 +140,20 @@ int main(void){
     /*osThreadDef(ds18_task, ds18_task, osPriorityHigh, 0, 364);
     defaultTaskHandle = osThreadCreate(osThread(ds18_task), NULL);
 */
+    osThreadDef(adc_task, adc_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
+    adcTaskHandle = osThreadCreate(osThread(adc_task), NULL);
 
-    osThreadDef(control_task, control_task, osPriorityNormal, 0, 364);
-    controlTaskHandle = osThreadCreate(osThread(control_task), NULL);
+    osThreadDef(control_task, control_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
+    //controlTaskHandle = osThreadCreate(osThread(control_task), NULL);
 
-    osThreadDef(display_task, display_task, osPriorityNormal, 0, 512);
+    osThreadDef(display_task, display_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*4);
     displayTaskHandle = osThreadCreate(osThread(display_task), NULL);
 
-    osThreadDef(buttons_task, buttons_task, osPriorityNormal, 0, 128);
+    osThreadDef(buttons_task, buttons_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
     buttonsTaskHandle = osThreadCreate(osThread(buttons_task), NULL);
 
-    osThreadDef(menu_task, navigation_task, osPriorityNormal, 0, 364);
-    menuTaskHandle = osThreadCreate(osThread(menu_task), NULL);
+    osThreadDef(navigation_task, navigation_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+    menuTaskHandle = osThreadCreate(osThread(navigation_task), NULL);
 
 #endif
 
@@ -196,9 +199,9 @@ void dcts_init (void) {
     dcts_meas_channel_init(TMPR_FLOOR_RES, "Tmpr floor RES", "Температура пола сопр", "Ohm", "Ом");
     dcts_meas_channel_init(TMPR_FLOOR_ADC, "Tmpr floor ADC", "Температура пола АЦП", "ADC", "АЦП");
     dcts_meas_channel_init(TMPR_FLOOR_VLT, "Tmpr floor Vlt", "Температура пола напр.", "V", "В");
-    dcts_meas_channel_init(TMPR_SEM_GRAD, "Tmpr sem", "Температура семистора", "°C", "°C");
-    dcts_meas_channel_init(TMPR_SEM_ADC, "Tmpr sem ADC", "Температура семистора АЦП", "ADC", "АЦП");
-    dcts_meas_channel_init(TMPR_SEM_VLT, "Tmpr sem Vlt", "Температура семистора напр.", "V", "В");
+    dcts_meas_channel_init(TMPR_REG_GRAD, "Tmpr sem", "Температура семистора", "°C", "°C");
+    dcts_meas_channel_init(TMPR_REG_ADC, "Tmpr sem ADC", "Температура семистора АЦП", "ADC", "АЦП");
+    dcts_meas_channel_init(TMPR_REG_VLT, "Tmpr sem Vlt", "Температура семистора напр.", "V", "В");
     dcts_meas_channel_init(VREF_VLT, "Vref V", "Опорное напр. В", "V", "В");
     dcts_meas_channel_init(VBAT_VLT, "RTC battery V", "Батарейка В", "V", "В");
 

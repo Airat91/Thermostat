@@ -76,8 +76,19 @@ typedef struct{
     float hysteresis;
     float dispersion;
     float correction;
+}sensor_tt;
+typedef enum {
+    SENSOR_NTC_10K,
+    SENSOR_DS18B20,
+    SENSOR_LM35,
 }sensor_t;
-extern sensor_t sensor_state;
+typedef enum {
+    CTRL_RULE_PWM,
+    CTRL_RULE_TMPR,
+}ctrl_rule_t;
+extern const char sensor_descr[][20];
+extern const char ctrl_rule_descr[][20];
+extern sensor_tt sensor_state;
 typedef struct{
     u8 overheat;
     u16 overheat_cnt;

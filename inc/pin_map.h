@@ -4,8 +4,8 @@
 #include "stm32f1xx_hal.h"
 #include "stm32f1xx_hal_gpio.h"
 
-#define LOAD_TEMP_PORT  GPIOA
-#define LOAD_TEMP_PIN   GPIO_PIN_0
+#define FLOOR_TEMP_PORT GPIOA
+#define FLOOR_TEMP_PIN  GPIO_PIN_0
 #define REG_TEMP_PORT   GPIOA
 #define REG_TEMP_PIN    GPIO_PIN_1
 #define UP_PORT         GPIOA

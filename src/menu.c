@@ -37,7 +37,7 @@ MAKE_MENU       (main_page,     NULL_ENTRY,     NULL_ENTRY,     NULL_ENTRY,     
   MAKE_MENU     (common_info,   meas_channels,  date,           main_page,      info,           1,          COMMON_INFO,        "Об устройстве");
     MAKE_MENU   (info,          NULL_ENTRY,     NULL_ENTRY,     common_info,    NULL_ENTRY,     0,          INFO,               "Об устройстве");
   MAKE_MENU     (meas_channels, act_channels,   common_info,    main_page,      meas_ch_0,      10,         MEAS_CHANNELS,      "Изм. каналы");
-    MAKE_MENU   (meas_ch_0,     meas_ch_1,      meas_ch_9,     meas_channels,  NULL_ENTRY,     0,          MEAS_CH_0,          "Темп. пола");
+    MAKE_MENU   (meas_ch_0,     meas_ch_1,      meas_ch_9,      meas_channels,  NULL_ENTRY,     0,          MEAS_CH_0,          "Темп. пола");
     MAKE_MENU   (meas_ch_1,     meas_ch_2,      meas_ch_0,      meas_channels,  NULL_ENTRY,     0,          MEAS_CH_1,          "Темп. пола Ом");
     MAKE_MENU   (meas_ch_2,     meas_ch_3,      meas_ch_1,      meas_channels,  NULL_ENTRY,     0,          MEAS_CH_2,          "Темп. пола АЦП");
     MAKE_MENU   (meas_ch_3,     meas_ch_4,      meas_ch_2,      meas_channels,  NULL_ENTRY,     0,          MEAS_CH_3,          "Темп. пола В");

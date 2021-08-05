@@ -95,7 +95,7 @@ typedef struct {
     register_type test;				// float
 } pid_out_t;
 
-sensor_t sensor_state = {
+sensor_tt sensor_state = {
     SENSOR_OK,
     10,
     HYSTERESIS,
@@ -107,6 +107,17 @@ semistor_t semistor_state = {
     0,
     MAX_REG_TEMP
 };
+
+const char sensor_descr[3][20]={
+    {"NTC 10K"},
+    {"DS18B20"},
+    {"LM35"},
+};
+const char ctrl_rule_descr[2][20]={
+    {"PWM"},
+    {"Датчик"},
+};
+
 
 void pid(pid_in_t * inputs,pid_var_t * vars,\
                   pid_out_t * outputs);
