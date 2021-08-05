@@ -53,10 +53,12 @@ void buttons_task (void const * argument){
                 SSD1306.auto_off_timeout = 0;
                 if(SSD1306.on_off == 0){
                     SSD1306.on_off = 1;
+                    while(!HAL_GPIO_ReadPin(pressed_time[button].port, pressed_time[button].pin)){
+                        osDelay(1);
+                    }
                 }
             }else{
                 pressed_time[button].last_state = BUTTON_RELEASE;
-                //pressed_time[button].pressed = 0;
             }
         }
         osDelayUntil(&last_wake_time, BUTTONS_TASK_PERIOD);
