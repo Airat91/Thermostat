@@ -1045,10 +1045,12 @@ static int get_param_value(char* string, menu_page_t page){
         break;
 
     case RELE_AUTO_MAN_0:
+    case RELE_AUTO_MAN_1:
         sprintf(string, "%s", manual_auto_descr[dcts_rele[(uint8_t)(page - RELE_AUTO_MAN_0)/3].state.control_by_act]);
         break;
 
     case RELE_CONTROL_0:
+    case RELE_CONTROL_1:
         sprintf(string, "%s", off_on_descr[dcts_rele[(uint8_t)(page - RELE_CONTROL_0)/3].state.control]);
         if(dcts_rele[(uint8_t)(page - RELE_CONTROL_0)/3].state.control_by_act == 1){
             result = -3;
@@ -1166,6 +1168,17 @@ static void set_edit_value(menu_page_t page){
         edit_val.select_shift = 0;
         edit_val.select_width = Font_7x10.FontWidth*6;
         break;
+    case RELE_AUTO_MAN_1:
+        edit_val.type = VAL_UINT8;
+        edit_val.digit_max = 0;
+        edit_val.digit_min = 0;
+        edit_val.digit = 0;
+        edit_val.val_min.uint8 = 0;
+        edit_val.val_max.uint8 = 1;
+        edit_val.p_val.p_uint8 = &dcts_rele[LED].state.control_by_act;
+        edit_val.select_shift = 0;
+        edit_val.select_width = Font_7x10.FontWidth*6;
+        break;
     case RELE_CONTROL_0:
         if(dcts_rele[HEATER].state.control_by_act == 0){
             edit_val.type = VAL_UINT8;
@@ -1175,6 +1188,19 @@ static void set_edit_value(menu_page_t page){
             edit_val.val_min.uint8 = 0;
             edit_val.val_max.uint8 = 1;
             edit_val.p_val.p_uint8 = &dcts_rele[HEATER].state.control;
+            edit_val.select_shift = 0;
+            edit_val.select_width = Font_7x10.FontWidth*5;
+        }
+        break;
+    case RELE_CONTROL_1:
+        if(dcts_rele[HEATER].state.control_by_act == 0){
+            edit_val.type = VAL_UINT8;
+            edit_val.digit_max = 0;
+            edit_val.digit_min = 0;
+            edit_val.digit = 0;
+            edit_val.val_min.uint8 = 0;
+            edit_val.val_max.uint8 = 1;
+            edit_val.p_val.p_uint8 = &dcts_rele[LED].state.control;
             edit_val.select_shift = 0;
             edit_val.select_width = Font_7x10.FontWidth*5;
         }

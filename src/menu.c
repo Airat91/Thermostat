@@ -58,10 +58,13 @@ MAKE_MENU       (main_page,     NULL_ENTRY,     NULL_ENTRY,     NULL_ENTRY,     
       MAKE_MENU (act_set_1,     act_hyst_1,     act_en_1,       act_ch_1,       EDITED_VAL,     0,          ACT_SET_0,          "Задано");
       MAKE_MENU (act_hyst_1,    act_cur_1,      act_set_1,      act_ch_1,       EDITED_VAL,     0,          ACT_HYST_0,         "Гистерезис");
       MAKE_MENU (act_cur_1,     act_en_1,       act_hyst_1,     act_ch_1,       NULL_ENTRY,     0,          ACT_CUR_0,          "Текущее");
-  MAKE_MENU     (rele_channels, display,        act_channels,   main_page,      rele_ch_0,      1,          RELE_CHANNELS,      "Релейные выходы");
-    MAKE_MENU   (rele_ch_0,     rele_ch_0,      rele_ch_0,      rele_channels,  rele_auto_0,    2,          RELE_CH_0,          "Нагреватель");
+  MAKE_MENU     (rele_channels, display,        act_channels,   main_page,      rele_ch_0,      2,          RELE_CHANNELS,      "Релейные выходы");
+    MAKE_MENU   (rele_ch_0,     rele_ch_1,      rele_ch_1,      rele_channels,  rele_auto_0,    2,          RELE_CH_0,          "Нагреватель");
       MAKE_MENU (rele_auto_0,   rele_cntrl_0,   rele_cntrl_0,   rele_ch_0,      EDITED_VAL,     0,          RELE_AUTO_MAN_0,    "Управление");
       MAKE_MENU (rele_cntrl_0,  rele_auto_0,    rele_auto_0,    rele_ch_0,      EDITED_VAL,     0,          RELE_CONTROL_0,     "Состояние");
+    MAKE_MENU   (rele_ch_1,     rele_ch_0,      rele_ch_0,      rele_channels,  rele_auto_1,    2,          RELE_CH_1,          "Индикатор");
+      MAKE_MENU (rele_auto_1,   rele_cntrl_1,   rele_cntrl_1,   rele_ch_1,      EDITED_VAL,     0,          RELE_AUTO_MAN_1,    "Управление");
+      MAKE_MENU (rele_cntrl_1,  rele_auto_1,    rele_auto_1,    rele_ch_1,      EDITED_VAL,     0,          RELE_CONTROL_1,     "Состояние");
   MAKE_MENU     (display,       time,           rele_channels,  main_page,      light_lvl,      3,          DISPLAY,            "Дисплей");
     MAKE_MENU   (light_lvl,     auto_off,       skin,           display,        EDITED_VAL,     0,          LIGHT_LVL,          "Яркость");
     MAKE_MENU   (auto_off,      skin,           light_lvl,      display,        EDITED_VAL,     0,          AUTO_OFF,           "Автовыкл. подсветки");
