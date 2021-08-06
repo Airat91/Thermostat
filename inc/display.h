@@ -53,11 +53,10 @@
 
 typedef enum{
    SKIN_FULL = 0,
-   SKIN_1,
-   SKIN_2,
-   SKIN_EMPTY,
-   SKIN_END_OF_LIST,
+   SKIN_TIME,
+   SKIN_TEMP,
 }skin_t;
+extern const char skin_descr[][20];
 
 void display_task( const void *parameters);
 void navigation_task( const void *parameters);

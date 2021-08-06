@@ -62,9 +62,10 @@ MAKE_MENU       (main_page,     NULL_ENTRY,     NULL_ENTRY,     NULL_ENTRY,     
     MAKE_MENU   (rele_ch_0,     rele_ch_0,      rele_ch_0,      rele_channels,  rele_auto_0,    2,          RELE_CH_0,          "Нагреватель");
       MAKE_MENU (rele_auto_0,   rele_cntrl_0,   rele_cntrl_0,   rele_ch_0,      EDITED_VAL,     0,          RELE_AUTO_MAN_0,    "Управление");
       MAKE_MENU (rele_cntrl_0,  rele_auto_0,    rele_auto_0,    rele_ch_0,      EDITED_VAL,     0,          RELE_CONTROL_0,     "Состояние");
-  MAKE_MENU     (display,       time,           rele_channels,  main_page,      light_lvl,      2,          DISPLAY,            "Дисплей");
-    MAKE_MENU   (light_lvl,     auto_off,       auto_off,       display,        EDITED_VAL,     0,          LIGHT_LVL,          "Яркость");
-    MAKE_MENU   (auto_off,      light_lvl,      light_lvl,      display,        EDITED_VAL,     0,          AUTO_OFF,           "Автовыкл. подсветки");
+  MAKE_MENU     (display,       time,           rele_channels,  main_page,      light_lvl,      3,          DISPLAY,            "Дисплей");
+    MAKE_MENU   (light_lvl,     auto_off,       skin,           display,        EDITED_VAL,     0,          LIGHT_LVL,          "Яркость");
+    MAKE_MENU   (auto_off,      skin,           light_lvl,      display,        EDITED_VAL,     0,          AUTO_OFF,           "Автовыкл. подсветки");
+    MAKE_MENU   (skin,          light_lvl,      auto_off,       display,        EDITED_VAL,     0,          SKIN,               "Скин");
   MAKE_MENU     (time,          date,           display,        main_page,      time_hour,      3,          TIME,               "Время");
     MAKE_MENU   (time_hour,     time_min,       time_sec,       time,           EDITED_VAL,     0,          TIME_HOUR,          "Часы");
     MAKE_MENU   (time_min,      time_sec,       time_hour,      time,           EDITED_VAL,     0,          TIME_MIN,           "Минуты");

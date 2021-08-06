@@ -56,6 +56,7 @@ typedef enum {
     DISPLAY,
     LIGHT_LVL,
     AUTO_OFF,
+    SKIN,
     TIME,
     TIME_HOUR,
     TIME_MIN,

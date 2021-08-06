@@ -95,6 +95,11 @@ static const char weekday_descr[7][3] = {
     "Пт",
     "Сб",
 };
+const char skin_descr[3][20]={
+    {"Полный"},
+    {"Время"},
+    {"Темпер"},
+};
 /*enum menu_page_t {
     PAGE_CLOCK,
     PAGE_HYSTERESIS,
@@ -221,7 +226,7 @@ static void main_page_print(u8 tick, skin_t skin){
 
         display_time(0);
         break;
-    case SKIN_1:
+    case SKIN_TIME:
         if(sensor_state.error == SENSOR_OK){
             sprintf(buff,"%2.1f", (double)dcts_act[0].meas_value);
             SSD1306_GotoXY(0, 14);
@@ -252,7 +257,7 @@ static void main_page_print(u8 tick, skin_t skin){
         SSD1306_GotoXY(70, 16);
         SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
         break;
-    case SKIN_2:
+    case SKIN_TEMP:
         if(sensor_state.error == SENSOR_OK){
             sprintf(buff,"%2.1f", (double)dcts_act[0].meas_value);
             SSD1306_GotoXY(0, 14);
@@ -1057,7 +1062,9 @@ static int get_param_value(char* string, menu_page_t page){
     case AUTO_OFF:
         sprintf(string, "%dс", config.params.auto_off*10);
         break;
-
+    case SKIN:
+        sprintf(string, "%s", skin_descr[config.params.skin]);
+        break;
     case TIME_HOUR:
         sprintf(string, "%02d", dcts.dcts_rtc.hour);
         break;
@@ -1184,7 +1191,7 @@ static void set_edit_value(menu_page_t page){
         edit_val.select_width = Font_7x10.FontWidth;
         break;
     case AUTO_OFF:
-        edit_val.type = VAL_UINT16;
+        edit_val.type = VAL_UINT8;
         edit_val.digit_max = 1;
         edit_val.digit_min = 0;
         edit_val.digit = 0;
@@ -1193,6 +1200,17 @@ static void set_edit_value(menu_page_t page){
         edit_val.p_val.p_uint8 = &config.params.auto_off;
         edit_val.select_shift = 2;
         edit_val.select_width = Font_7x10.FontWidth;
+        break;
+    case SKIN:
+        edit_val.type = VAL_UINT8;
+        edit_val.digit_max = 0;
+        edit_val.digit_min = 0;
+        edit_val.digit = 0;
+        edit_val.val_min.uint8 = 0;
+        edit_val.val_max.uint8 = 2;
+        edit_val.p_val.p_uint8 = &config.params.skin;
+        edit_val.select_shift = 0;
+        edit_val.select_width = Font_7x10.FontWidth*6;
         break;
     case TIME_HOUR:
         edit_val.type = VAL_UINT8;
