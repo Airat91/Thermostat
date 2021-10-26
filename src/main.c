@@ -61,6 +61,7 @@
 #include "string.h"
 #include "flash.h"
 #include "adc.h"
+#include "time.h"
 
 #define FEEDER 0
 #define RELEASE 0
@@ -100,7 +101,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_IWDG_Init(void);
 static void RTC_Init(void);
-//static void MX_ADC1_Init(void);
+static int RTC_write_cnt(time_t cnt_value);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
@@ -127,13 +128,9 @@ int main(void){
 #endif // RELEASE
     dcts_init();
     restore_params();
-    //RTC_Init();
-    //MX_ADC1_Init();
     //MX_USART1_UART_Init();
     //MX_TIM3_Init();
     //MX_TIM2_Init();
-    //HAL_ADC_Start(&hadc1);
-    //HAL_ADCEx_InjectedStart(&hadc1);
     osThreadDef(rtc_task, rtc_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
     defaultTaskHandle = osThreadCreate(osThread(rtc_task), NULL);
 #if FEEDER
@@ -183,13 +180,6 @@ void dcts_init (void) {
     dcts.dcts_rtc.hour = 12;
     dcts.dcts_rtc.minute = 0;
     dcts.dcts_rtc.second = 0;
-    /*uint16_t read = read_bkp(0);
-    if(read == RTC_KEY){
-        dcts.dcts_rtc.state = RTC_STATE_READY;
-    }else{
-        save_to_bkp(0, RTC_KEY);
-        dcts.dcts_rtc.state = RTC_STATE_SET;
-    }*/
     dcts.dcts_pwr = 0.0f;
     dcts.dcts_meas_num = MEAS_NUM;
     dcts.dcts_rele_num = RELE_NUM;
@@ -283,12 +273,12 @@ void SystemClock_Config(void)
 }
 
 /* ADC1 init function */
-static void MX_ADC1_Init(void)
+/*static void MX_ADC1_Init(void)
 {
-    ADC_InjectionConfTypeDef sConfigInjected = {0};
+    ADC_InjectionConfTypeDef sConfigInjected = {0};*/
 
     /* Common config */
-    hadc1.Instance = ADC1;
+    /*hadc1.Instance = ADC1;
     hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
     hadc1.Init.ContinuousConvMode = ENABLE;
     hadc1.Init.DiscontinuousConvMode = DISABLE;
@@ -298,10 +288,10 @@ static void MX_ADC1_Init(void)
     if (HAL_ADC_Init(&hadc1) != HAL_OK)
     {
       Error_Handler();
-    }
+    }*/
 
     /* Configure Injected Channels */
-    sConfigInjected.InjectedChannel = ADC_CHANNEL_0;
+    /*sConfigInjected.InjectedChannel = ADC_CHANNEL_0;
     sConfigInjected.InjectedRank = ADC_INJECTED_RANK_1;
     sConfigInjected.InjectedNbrOfConversion = 3;
     sConfigInjected.InjectedSamplingTime = ADC_SAMPLETIME_239CYCLES_5;
@@ -328,7 +318,7 @@ static void MX_ADC1_Init(void)
       Error_Handler();
     }
 
-}
+}*/
 
 /* IWDG init function */
 static void MX_IWDG_Init(void)
@@ -346,8 +336,8 @@ static void MX_IWDG_Init(void)
 
 /* RTC init function */
 static void RTC_Init(void){
-    RTC_TimeTypeDef sTime = {0};
-    RTC_DateTypeDef sDate = {0};
+    time_t unix_time = 0;
+    struct tm system_time = {0};
     __HAL_RCC_BKP_CLK_ENABLE();
     __HAL_RCC_PWR_CLK_ENABLE();
     __HAL_RCC_RTC_ENABLE();
@@ -356,8 +346,6 @@ static void RTC_Init(void){
     if (HAL_RTC_Init(&hrtc) != HAL_OK) {
         _Error_Handler(__FILE__, __LINE__);
     }
-
-    //const  u32 data_c = 0x1234;
     uint16_t read = read_bkp(0);
     if(read == RTC_KEY){
         dcts.dcts_rtc.state = RTC_STATE_READY;
@@ -367,20 +355,59 @@ static void RTC_Init(void){
     }
     if(dcts.dcts_rtc.state == RTC_STATE_SET){
 
-        sTime.Hours = dcts.dcts_rtc.hour;
-        sTime.Minutes = dcts.dcts_rtc.minute;
-        sTime.Seconds = dcts.dcts_rtc.second;
+        system_time.tm_hour = dcts.dcts_rtc.hour;
+        system_time.tm_min = dcts.dcts_rtc.minute;
+        system_time.tm_sec = dcts.dcts_rtc.second;
 
-        sDate.Date = dcts.dcts_rtc.day;
-        sDate.Month = dcts.dcts_rtc.month;
-        sDate.Year = (uint8_t)(dcts.dcts_rtc.year - 2000);
+        system_time.tm_mday = dcts.dcts_rtc.day;
+        system_time.tm_mon = dcts.dcts_rtc.month;
+        system_time.tm_year = dcts.dcts_rtc.year - 1900;
 
-        HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD);
-        HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+        unix_time = mktime(&system_time);
+
+        RTC_write_cnt(unix_time);
+        dcts.dcts_rtc.state = RTC_STATE_READY;
     }
 }
+/**
+ * @brief RTC_write_cnt
+ * @param cnt_value - time in unix format
+ * @return  0 - OK,\n
+ *          -1 - timeout error,\n
+ *          -2 - timeout error
+ */
+static int RTC_write_cnt(time_t cnt_value){
+    int result = 0;
+    u32 start = HAL_GetTick();
+    u32 timeout = 0;
+    PWR->CR |= PWR_CR_DBP;                                          //разрешить доступ к Backup области
+    while ((!(RTC->CRL & RTC_CRL_RTOFF))&&(timeout <= start + 500)){//проверить закончены ли изменения регистров RTC
+        osDelay(1);
+        timeout++;
+    }
+    if(timeout > start + 500){
+        result = -1;
+    }
+    RTC->CRL |= RTC_CRL_CNF;                                        //Разрешить Запись в регистры RTC
+    RTC->CNTH = (u32)cnt_value>>16;                                 //записать новое значение счетного регистра
+    RTC->CNTL = (u32)cnt_value;
+    RTC->CRL &= ~RTC_CRL_CNF;                                       //Запретить запись в регистры RTC
+    start = HAL_GetTick();
+    while ((!(RTC->CRL & RTC_CRL_RTOFF))&&(timeout <= start + 500)){//Дождаться окончания записи
+        osDelay(1);
+        timeout++;
+    }
+    if(timeout > start + 500){
+        result = -2;
+    }
+    PWR->CR &= ~PWR_CR_DBP;                                         //запретить доступ к Backup области
+    return result;
+}
 
-/* TIM3 init function */
+/** TIM3 init function
+ * check implementation
+ */
+
 static void MX_TIM3_Init(void){
     TIM_ClockConfigTypeDef sClockSourceConfig;
     TIM_MasterConfigTypeDef sMasterConfig;
@@ -416,26 +443,6 @@ static void MX_TIM3_Init(void){
     HAL_TIM_MspPostInit(&htim3);
 }
 
-
-/* USART1 init function */
-static void MX_USART1_UART_Init(void)
-{
-
-    huart1.Instance = USART1;
-    huart1.Init.BaudRate = 115200;
-    huart1.Init.WordLength = UART_WORDLENGTH_8B;
-    huart1.Init.StopBits = UART_STOPBITS_1;
-    huart1.Init.Parity = UART_PARITY_NONE;
-    huart1.Init.Mode = UART_MODE_TX_RX;
-    huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-    huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-    if (HAL_UART_Init(&huart1) != HAL_OK)
-    {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-
-}
-
 /** Configure pins as 
         * Analog
         * Input
@@ -453,37 +460,6 @@ static void MX_GPIO_Init(void){
     __HAL_RCC_GPIOB_CLK_ENABLE();
     __HAL_RCC_GPIOD_CLK_ENABLE();
 
-    /* Buttons */
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-
-    GPIO_InitStruct.Pin = UP_PIN;
-    HAL_GPIO_Init(UP_PORT, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = DOWN_PIN;
-    HAL_GPIO_Init(DOWN_PORT, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = LEFT_PIN;
-    HAL_GPIO_Init(LEFT_PORT, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = RIGHT_PIN;
-    HAL_GPIO_Init(RIGHT_PORT, &GPIO_InitStruct);
-    GPIO_InitStruct.Pin = OK_PIN;
-    HAL_GPIO_Init(OK_PORT, &GPIO_InitStruct);
-
-    /* ADC inputs
-    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-
-    GPIO_InitStruct.Pin = LOAD_TEMP_PIN;
-    HAL_GPIO_Init(LOAD_TEMP_PORT, &GPIO_InitStruct);
-    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-    GPIO_InitStruct.Pin = REG_TEMP_PIN;
-    HAL_GPIO_Init(REG_TEMP_PORT, &GPIO_InitStruct);
-    */
-
-    /* DEBUG pins */
-
-    /* I2C display pins */
-
     /* 50 Hz SYNC pin */
     GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
     GPIO_InitStruct.Pull = GPIO_PULLUP;
@@ -499,46 +475,56 @@ static void MX_GPIO_Init(void){
     GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Pin = REG_ON_PIN;
     HAL_GPIO_Init(REG_ON_PORT, &GPIO_InitStruct);
+
+    /* LED pin */
+    HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Pin = LED_PIN;
+    HAL_GPIO_Init(LED_PORT, &GPIO_InitStruct);
 }
 
-/* StartDefaultTask function */
+/**
+  *
+  */
 #define RTC_TASK_PERIOD 500
 void rtc_task(void const * argument){
-
     (void)argument;
-    RTC_TimeTypeDef time;
-    RTC_DateTypeDef date;
+    time_t unix_time = 0;
+    struct tm system_time = {0};
     RTC_Init();
     uint32_t last_wake_time = osKernelSysTick();
 
     while(1){
         switch (dcts.dcts_rtc.state) {
         case RTC_STATE_READY:   //update dcts_rtc from rtc
-            HAL_RTC_GetDate(&hrtc,&date,RTC_FORMAT_BIN);
-            HAL_RTC_GetTime(&hrtc,&time,RTC_FORMAT_BIN);
+            unix_time = (time_t)(RTC->CNTL);
+            unix_time |= (time_t)(RTC->CNTH<<16);
+            system_time = *localtime(&unix_time);
 
             taskENTER_CRITICAL();
-            dcts.dcts_rtc.hour = time.Hours;
-            dcts.dcts_rtc.minute = time.Minutes;
-            dcts.dcts_rtc.second = time.Seconds;
+            dcts.dcts_rtc.hour      = (u8)system_time.tm_hour;
+            dcts.dcts_rtc.minute    = (u8)system_time.tm_min;
+            dcts.dcts_rtc.second    = (u8)system_time.tm_sec;
 
-            dcts.dcts_rtc.day = date.Date;
-            dcts.dcts_rtc.month = date.Month;
-            dcts.dcts_rtc.year = date.Year + 2000;
-            dcts.dcts_rtc.weekday = date.WeekDay;
+            dcts.dcts_rtc.day       = (u8)system_time.tm_mday;
+            dcts.dcts_rtc.month     = (u8)system_time.tm_mon;
+            dcts.dcts_rtc.year      = (u8)system_time.tm_year + 1900;
+            dcts.dcts_rtc.weekday   = (u8)system_time.tm_wday;
             taskEXIT_CRITICAL();
             break;
         case RTC_STATE_SET:     //set new values from dcts_rtc
-            time.Hours = dcts.dcts_rtc.hour;
-            time.Minutes = dcts.dcts_rtc.minute;
-            time.Seconds = dcts.dcts_rtc.second;
+            system_time.tm_hour = dcts.dcts_rtc.hour;
+            system_time.tm_min  = dcts.dcts_rtc.minute;
+            system_time.tm_sec  = dcts.dcts_rtc.second;
 
-            date.Date = dcts.dcts_rtc.day;
-            date.Month = dcts.dcts_rtc.month;
-            date.Year = (uint8_t)(dcts.dcts_rtc.year - 2000);
+            system_time.tm_mday = dcts.dcts_rtc.day;
+            system_time.tm_mon  = dcts.dcts_rtc.month;
+            system_time.tm_year = dcts.dcts_rtc.year - 1900;
 
-            HAL_RTC_SetTime(&hrtc, &time, RTC_FORMAT_BIN);
-            HAL_RTC_SetDate(&hrtc, &date, RTC_FORMAT_BIN);
+            unix_time = mktime(&system_time);
+
+            RTC_write_cnt(unix_time);
 
             dcts.dcts_rtc.state = RTC_STATE_READY;
             break;
