@@ -103,7 +103,7 @@ static void MX_IWDG_Init(void);
 static void RTC_Init(void);
 static int RTC_write_cnt(time_t cnt_value);
 static void MX_USART1_UART_Init(void);
-static void MX_TIM2_Init(void);
+static void tim2_init(void);
 static void MX_TIM3_Init(void);
 static void save_to_bkp(u8 bkp_num, uint16_t var);
 static void save_float_to_bkp(u8 bkp_num, float var);
@@ -130,16 +130,10 @@ int main(void){
     restore_params();
     //MX_USART1_UART_Init();
     //MX_TIM3_Init();
-    //MX_TIM2_Init();
+    tim2_init();
     osThreadDef(rtc_task, rtc_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
     defaultTaskHandle = osThreadCreate(osThread(rtc_task), NULL);
-#if FEEDER
-    osThreadDef(step_task, step_task, osPriorityNormal, 0, 364);
-    defaultTaskHandle = osThreadCreate(osThread(step_task), NULL);
-#else
-    /*osThreadDef(ds18_task, ds18_task, osPriorityHigh, 0, 364);
-    defaultTaskHandle = osThreadCreate(osThread(ds18_task), NULL);
-*/
+
     osThreadDef(adc_task, adc_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
     adcTaskHandle = osThreadCreate(osThread(adc_task), NULL);
 
@@ -154,8 +148,6 @@ int main(void){
 
     osThreadDef(navigation_task, navigation_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
     menuTaskHandle = osThreadCreate(osThread(navigation_task), NULL);
-
-#endif
 
     /* Start scheduler */
     osKernelStart();
@@ -197,6 +189,10 @@ void dcts_init (void) {
     dcts_meas_channel_init(TMPR_REG_VLT, "Tmpr sem Vlt", "Температура семистора напр.", "V", "В");
     dcts_meas_channel_init(VREF_VLT, "Vref V", "Опорное напр. В", "V", "В");
     dcts_meas_channel_init(VBAT_VLT, "RTC battery V", "Батарейка В", "V", "В");
+    dcts_meas_channel_init(VBAT_VLT, "Consumption", "Потребление", "W", "Вт");
+    dcts_meas_channel_init(VBAT_VLT, "Synchro 0", "Синхроимп 0", "us", "мкс");
+    dcts_meas_channel_init(VBAT_VLT, "Synchro 1", "Синхроимп 1", "us", "мкс");
+    dcts_meas_channel_init(VBAT_VLT, "AC frequency", "Частота сети", "Hz", "Гц");
 
     //act_channels
 
@@ -539,14 +535,18 @@ void rtc_task(void const * argument){
     }
 }
 
-/* TIM2 init function */
-static void MX_TIM2_Init(void){
+/**
+ * @brief Init us timer
+ * @ingroup MAIN
+ */
+static void tim2_init(void){
     TIM_ClockConfigTypeDef sClockSourceConfig;
     TIM_MasterConfigTypeDef sMasterConfig;
+    __HAL_RCC_TIM2_CLK_ENABLE();
     htim2.Instance = TIM2;
     htim2.Init.Prescaler = 71;
     htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim2.Init.Period = 65000;
+    htim2.Init.Period = 0xFFFF;
     htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
     if (HAL_TIM_Base_Init(&htim2) != HAL_OK)  {
@@ -561,7 +561,38 @@ static void MX_TIM2_Init(void){
     if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)  {
         _Error_Handler(__FILE__, __LINE__);
     }
-
+    HAL_NVIC_EnableIRQ(TIM2_IRQn);
+    if (HAL_TIM_Base_Start_IT(&htim2) != HAL_OK){
+        _Error_Handler(__FILE__, __LINE__);
+    }
+}
+/**
+ * @brief Get value from global us timer
+ * @return global us timer value
+ * @ingroup MAIN
+ */
+uint32_t us_tim_get_value(void){
+    uint32_t value = us_cnt_H + TIM2->CNT;
+    return value;
+}
+/**
+ * @brief Us delayy
+ * @param us - delau value
+ * @ingroup MAIN
+ */
+void us_tim_delay(uint32_t us){
+    uint32_t current;
+    uint8_t with_yield;
+    current = TIM2->CNT;
+    with_yield = 0;
+    if(us > TIME_YIELD_THRESHOLD){
+        with_yield =1;
+    }
+    while ((TIM2->CNT - current)<us){
+        if(with_yield){
+            osThreadYield();
+        }
+    }
 }
 
 

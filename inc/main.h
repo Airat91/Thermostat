@@ -84,7 +84,8 @@ PA10     ------> USART1_RX
 //#define LED_PIN  LL_GPIO_PIN_13
 
 
-#define MEAS_NUM 10
+#define TIME_YIELD_THRESHOLD 100
+#define MEAS_NUM 13
 #define ACT_NUM 2
 #define RELE_NUM 2
 
@@ -120,6 +121,9 @@ void _Error_Handler(char *, int);
      VREF_VLT,
      VBAT_VLT,
      CONSUMPTION,
+     SYNC_0,
+     SYNC_1,
+     SYNC_FREQ,
  }dcts_meas_t;
 
  typedef enum {
