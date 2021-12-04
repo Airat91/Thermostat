@@ -143,9 +143,9 @@ int main(void){
     osThreadDef(adc_task, adc_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
     adcTaskHandle = osThreadCreate(osThread(adc_task), NULL);
 
-    /*osThreadDef(control_task, control_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
+    osThreadDef(control_task, control_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
     controlTaskHandle = osThreadCreate(osThread(control_task), NULL);
-*/
+
     osThreadDef(display_task, display_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*4);
     displayTaskHandle = osThreadCreate(osThread(display_task), NULL);
 
@@ -482,6 +482,9 @@ static void MX_GPIO_Init(void){
     GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Pin = LED_PIN;
     HAL_GPIO_Init(LED_PORT, &GPIO_InitStruct);
+
+    HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);
 }
 
 /**

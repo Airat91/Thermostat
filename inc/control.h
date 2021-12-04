@@ -86,6 +86,10 @@ typedef enum {
     CTRL_RULE_PWM,
     CTRL_RULE_TMPR,
 }ctrl_rule_t;
+typedef enum {
+    TMPR_HEATING,
+    TMPR_COOLING,
+}tmpr_proc_t;
 extern const char sensor_descr[][20];
 extern const char ctrl_rule_descr[][20];
 extern sensor_tt sensor_state;

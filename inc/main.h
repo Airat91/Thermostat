@@ -80,8 +80,8 @@
 PA9     ------> USART1_TX
 PA10     ------> USART1_RX
 */
-#define LED_PORT GPIOC
-#define LED_PIN  LL_GPIO_PIN_13
+//#define LED_PORT GPIOC
+//#define LED_PIN  LL_GPIO_PIN_13
 
 
 #define MEAS_NUM 10

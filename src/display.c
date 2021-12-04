@@ -212,7 +212,7 @@ static void main_page_print(u8 tick, skin_t skin){
             SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
         }
 
-        if(dcts_act[0].state.control == TRUE){
+        if(dcts_act[HEATER].state.control == TRUE){
             sprintf(buff,"Уст %2.0f%s", (double)dcts_act[HEATING].set_value, dcts_act[HEATING].unit);
         }else{
             sprintf(buff,"Выключен");
@@ -249,7 +249,7 @@ static void main_page_print(u8 tick, skin_t skin){
             SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
         }
 
-        if(dcts_act[0].state.control == TRUE){
+        if(dcts_act[HEATER].state.control == TRUE){
             sprintf(buff,"Уст %2.0f%s", (double)dcts_act[0].set_value, dcts_act[0].unit);
         }else {
             sprintf(buff,"Выключен");
@@ -280,7 +280,7 @@ static void main_page_print(u8 tick, skin_t skin){
             SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
         }
 
-        if(dcts_act[0].state.control == TRUE){
+        if(dcts_act[HEATER].state.control == TRUE){
             sprintf(buff,"Уст %2.0f%s", (double)dcts_act[0].set_value, dcts_act[0].unit);
         }else {
             sprintf(buff,"Выключен");
@@ -1193,7 +1193,7 @@ static void set_edit_value(menu_page_t page){
         }
         break;
     case RELE_CONTROL_1:
-        if(dcts_rele[HEATER].state.control_by_act == 0){
+        if(dcts_rele[LED].state.control_by_act == 0){
             edit_val.type = VAL_UINT8;
             edit_val.digit_max = 0;
             edit_val.digit_min = 0;

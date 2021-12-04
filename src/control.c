@@ -131,8 +131,12 @@ extern RTC_HandleTypeDef hrtc;
 extern ADC_HandleTypeDef hadc1;
 void control_task( const void *parameters){
     (void) parameters;
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    static tmpr_proc_t sem_temp = TMPR_HEATING;
+    static tmpr_proc_t floor_temp = TMPR_HEATING;
+
     u32 tick=0;
-    pid_in_t in;
+    /*pid_in_t in;
     pid_var_t var;
     pid_out_t out;
     float val;
@@ -149,10 +153,98 @@ void control_task( const void *parameters){
     in.ki.data.float32 = 9.0f;
     in.kd.data.float32 = -100.0f;
     in.position.data.float32 = DEFAULT_OUT;
-    in.gist_tube.data.float32 = 0.5f;
+    in.gist_tube.data.float32 = 0.5f;*/
     uint32_t last_wake_time = osKernelSysTick();
     while(1){
-        u8 sensor_data_valid;
+
+        // dcts_act[SEMISTOR]
+        if(dcts_act[SEMISTOR].state.control){
+            if(dcts_meas[TMPR_REG_GRAD].valid){
+                dcts_act[SEMISTOR].meas_value = dcts_meas[TMPR_REG_GRAD].value;
+                switch(sem_temp){
+                case TMPR_HEATING:
+                    if(dcts_act[SEMISTOR].meas_value > dcts_act[SEMISTOR].set_value + 0.5f*dcts_act[SEMISTOR].hysteresis){
+                        dcts_act[SEMISTOR].state.pin_state = 0; // work permit disable
+                        sem_temp = TMPR_COOLING;
+                    }
+                    break;
+                case TMPR_COOLING:
+                    if(dcts_act[SEMISTOR].meas_value < dcts_act[SEMISTOR].set_value - 0.5f*dcts_act[SEMISTOR].hysteresis){
+                        dcts_act[SEMISTOR].state.pin_state = 1; // work permit enable
+                        sem_temp = TMPR_HEATING;
+                    }
+                    break;
+                }
+            }else{
+                dcts_act[SEMISTOR].state.pin_state = 0; // work permit disable
+            }
+        }
+
+        // dcts_act[HEATING]
+        if(dcts_act[HEATING].state.control){
+            if(dcts_act[SEMISTOR].state.pin_state == 1){ // work permit enable
+                switch(config.params.ctrl_rule){
+                case CTRL_RULE_PWM:
+                    break;
+                case CTRL_RULE_TMPR:
+                    break;
+                }
+            }else{
+                dcts_act[HEATER].state.pin_state = 0;
+            }
+            // set dcts_rele[HEATER] if control_by_act enable
+            if(dcts_rele[HEATER].state.control_by_act == 1){
+                if(dcts_rele[HEATER].state.control != dcts_act[HEATING].state.pin_state){
+                    dcts_rele[HEATER].state.control = dcts_act[HEATING].state.pin_state;
+                }
+            }
+            // set dcts_rele[LED] if control_by_act enable
+            if(dcts_rele[LED].state.control_by_act == 1){
+                if(dcts_rele[LED].state.control != dcts_act[HEATING].state.pin_state){
+                    dcts_rele[LED].state.control = dcts_act[HEATING].state.pin_state;
+                }
+            }
+        }
+
+
+        // dcts_rele[HEATER]
+        if(dcts_rele[HEATER].state.control == 1){
+            //heater on
+            if(dcts_rele[HEATER].state.status == 0){
+                GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+                GPIO_InitStruct.Pull = GPIO_NOPULL;
+                GPIO_InitStruct.Pin = REG_ON_PIN;
+                HAL_GPIO_Init (REG_ON_PORT, &GPIO_InitStruct);
+                HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_RESET);
+                dcts_rele[HEATER].state.status = 1;
+            }
+        }else{
+            //heater off
+            if(dcts_rele[HEATER].state.status == 1){
+                GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+                GPIO_InitStruct.Pull = GPIO_NOPULL;
+                GPIO_InitStruct.Pin = REG_ON_PIN;
+                HAL_GPIO_Init (REG_ON_PORT, &GPIO_InitStruct);
+                dcts_rele[HEATER].state.status = 0;
+            }
+        }
+
+        // dcts_rele[LED]
+        if(dcts_rele[LED].state.control == 1){
+            //heater on
+            if(dcts_rele[LED].state.status == 0){
+                HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_RESET);
+                dcts_rele[LED].state.status = 1;
+            }
+        }else{
+            //heater off
+            if(dcts_rele[LED].state.status == 1){
+                HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);
+                dcts_rele[LED].state.status = 0;
+            }
+        }
+
+        /*u8 sensor_data_valid;
         sensor_data_valid = 0;
 
         u32 value[3];
@@ -160,7 +252,7 @@ void control_task( const void *parameters){
         value[1] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_2);
         value[2] = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_3);
 
-        /* ADC0 */
+        // ADC0
         val = ((float)value[0]/value[2])*1.2f;
         dcts_write_meas_value (3, val);
         if(val < SENSOR_MIN_VOLTAGE){
@@ -171,11 +263,11 @@ void control_task( const void *parameters){
             sensor_state.error = SENSOR_OK;
         }
 
-        /* ADC1 */
+        // ADC1
         val = ((float)value[1]/value[2])*1.2f;
         dcts_write_meas_value (4, val);
 
-        /* Floor T */
+        // Floor T
         val = ntc_tmpr_calc(dcts_meas[3].value);
         if(tick < sensor_state.buff_size){
             temp_buf[tick] = val;
@@ -197,16 +289,16 @@ void control_task( const void *parameters){
             dcts_write_act_meas_value (0, val);
         }
 
-        /* Reg T */
+        // Reg T
         val = dcts_meas[4].value/0.01f;
-        dcts_write_meas_value (1, val);
+        dcts_write_meas_value (1, val);*/
 
         /*in.require_value.data.float32 = act[0].set_value;
         in.current_value.data.float32 = act[0].meas_value;
         pid(&in,&var,&out);*/
-        if(tick > sensor_state.buff_size){
+        /*if(tick > sensor_state.buff_size){
             reg_on_control();
-        }
+        }*/
 
         refresh_watchdog();
         osDelayUntil(&last_wake_time,CONTROL_TASK_PERIOD);
