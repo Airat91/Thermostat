@@ -1333,6 +1333,9 @@ void navigation_task (void const * argument){
             if(button_click(BUTTON_OK, BUTTON_CLICK_TIME)){
                 menuChange(selectedMenuItem->Child);
             }
+            if(button_clamp(BUTTON_LEFT, BUTTON_PRESS_TIME)&&button_clamp(BUTTON_RIGHT, BUTTON_PRESS_TIME)){
+                navigation_style = BLOCKED;
+            }
             break;
         case DIGIT_EDIT:
             switch (selectedMenuItem->Page){
@@ -1495,6 +1498,11 @@ void navigation_task (void const * argument){
                     dcts.dcts_rtc.state = RTC_STATE_SET;
                     break;
                 }
+                navigation_style = MENU_NAVIGATION;
+            }
+            break;
+        case BLOCKED:
+            if(button_clamp(BUTTON_LEFT, BUTTON_PRESS_TIME)&&button_clamp(BUTTON_RIGHT, BUTTON_PRESS_TIME)){
                 navigation_style = MENU_NAVIGATION;
             }
             break;

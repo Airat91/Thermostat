@@ -135,6 +135,7 @@ void _Error_Handler(char *, int);
  typedef enum{
      MENU_NAVIGATION,
      DIGIT_EDIT,
+     BLOCKED,
  }navigation_t;
 
  typedef union{
