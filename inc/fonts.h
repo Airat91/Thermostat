@@ -38,6 +38,12 @@
 #include "stm32f1xx_hal.h"
 #include "string.h"
 
+#define FONT_5x7    1
+#define FONT_7x10    1
+#define FONT_11x18    0
+#define FONT_16x26    1
+#define FONT_16x16_ICONS    1
+
 /**
  * @defgroup FONTS
  * @ingroup LCD

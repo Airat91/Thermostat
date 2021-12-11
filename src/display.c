@@ -119,7 +119,7 @@ static const u8 menu_max_page[] = {4,1};*/
 void display_task( const void *parameters){
     (void) parameters;
     menu_init();
-    skin_t skin = SKIN_FULL; // add from config
+    //skin_t skin = SKIN_FULL; // add from config
     u8 tick=0;
     u8 tick_2 = 0;
     menu_page_t last_page = selectedMenuItem->Page;
@@ -150,7 +150,7 @@ void display_task( const void *parameters){
         }
         switch (selectedMenuItem->Page) {
         case MAIN_PAGE:
-            main_page_print(tick, skin);
+            main_page_print(tick, config.params.skin);
             break;
         case INFO:
             info_print();
@@ -225,79 +225,45 @@ static void main_page_print(u8 tick, skin_t skin){
         SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
         display_time(0);
-        if(navigation_style == BLOCKED){
-            sprintf(buff,"«‡·ÎÓÍËÓ‚‡ÌÓ");
-            SSD1306_GotoXY(align_text_center(buff,Font_7x10), 53);
-            SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-        }
         break;
     case SKIN_TIME:
-        if(sensor_state.error == SENSOR_OK){
-            sprintf(buff,"%2.1f", (double)dcts_act[0].meas_value);
-            SSD1306_GotoXY(0, 14);
-            SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
-        }else if(sensor_state.error == SENSOR_BREAK){
-            SSD1306_DrawFilledRectangle(0,14,64,26,SSD1306_COLOR_BLACK);    // clear area
-            sprintf(buff,"Œ¡–€¬");
-            SSD1306_GotoXY(15, 15);
-            SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-            sprintf(buff,"ƒ¿“◊» ¿");
-            SSD1306_GotoXY(7, 29);
-            SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-        }else if(sensor_state.error == SENSOR_SHORT){
-            SSD1306_DrawFilledRectangle(0,14,64,26,SSD1306_COLOR_BLACK);    // clear area
-            sprintf(buff,"«¿Ã€ ¿Õ»≈");
-            SSD1306_GotoXY(0, 15);
-            SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-            sprintf(buff,"ƒ¿“◊» ¿");
-            SSD1306_GotoXY(7, 29);
-            SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-        }
+        sprintf(buff,"%02d:%02d:%04d %s", dcts.dcts_rtc.day, dcts.dcts_rtc.month, dcts.dcts_rtc.year, weekday_descr[dcts.dcts_rtc.weekday]);
+        SSD1306_GotoXY(align_text_center(buff,Font_5x7), 0);
+        SSD1306_Puts(buff, &Font_5x7, SSD1306_COLOR_WHITE);
 
-        if(dcts_act[HEATER].state.control == TRUE){
-            sprintf(buff,"”ÒÚ %2.0f%s", (double)dcts_act[0].set_value, dcts_act[0].unit);
-        }else {
-            sprintf(buff,"¬˚ÍÎ˛˜ÂÌ");
+        if(tick%2 == 0){
+            sprintf(buff,"%02d:%02d", dcts.dcts_rtc.hour, dcts.dcts_rtc.minute);
+        }else{
+            sprintf(buff,"%02d %02d", dcts.dcts_rtc.hour, dcts.dcts_rtc.minute);
         }
-        SSD1306_GotoXY(70, 16);
-        SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+        SSD1306_GotoXY(align_text_center(buff,Font_16x26), 16);
+        SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
+
         break;
     case SKIN_TEMP:
-        if(sensor_state.error == SENSOR_OK){
-            sprintf(buff,"%2.1f", (double)dcts_act[0].meas_value);
-            SSD1306_GotoXY(0, 14);
-            SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
-        }else if(sensor_state.error == SENSOR_BREAK){
-            SSD1306_DrawFilledRectangle(0,14,64,26,SSD1306_COLOR_BLACK);    // clear area
-            sprintf(buff,"Œ¡–€¬");
-            SSD1306_GotoXY(15, 15);
-            SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-            sprintf(buff,"ƒ¿“◊» ¿");
-            SSD1306_GotoXY(7, 29);
-            SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-        }else if(sensor_state.error == SENSOR_SHORT){
-            SSD1306_DrawFilledRectangle(0,14,64,26,SSD1306_COLOR_BLACK);    // clear area
-            sprintf(buff,"«¿Ã€ ¿Õ»≈");
-            SSD1306_GotoXY(0, 15);
-            SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-            sprintf(buff,"ƒ¿“◊» ¿");
-            SSD1306_GotoXY(7, 29);
-            SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
-        }
+        sprintf(buff,"%2.1f", (double)dcts_meas[TMPR_FLOOR_GRAD].value);
+        SSD1306_GotoXY(align_text_center(buff, Font_16x26), 16);
+        SSD1306_Puts(buff, &Font_16x26, SSD1306_COLOR_WHITE);
 
         if(dcts_act[HEATER].state.control == TRUE){
-            sprintf(buff,"”ÒÚ %2.0f%s", (double)dcts_act[0].set_value, dcts_act[0].unit);
-        }else {
+            sprintf(buff,"”ÒÚ %2.0f%s", (double)dcts_act[HEATING].set_value, dcts_act[HEATING].unit);
+        }else{
             sprintf(buff,"¬˚ÍÎ˛˜ÂÌ");
         }
-        SSD1306_GotoXY(70, 16);
+        SSD1306_GotoXY(align_text_center(buff, Font_7x10), 0);
         SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
-        display_time(0);
         break;
     default:
         break;
     }
+
+    SSD1306_GotoXY(55,47);
+    if(navigation_style == BLOCKED){
+        SSD1306_Putc(27, &Icon_16x16, SSD1306_COLOR_WHITE);
+    }/*else{
+        SSD1306_Putc(28, &Icon_16x16, SSD1306_COLOR_WHITE);
+    }*/
 }
 
 static void info_print (void){
