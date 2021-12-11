@@ -457,7 +457,7 @@ static void MX_GPIO_Init(void){
     __HAL_RCC_GPIOD_CLK_ENABLE();
 
     /* 50 Hz SYNC pin */
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
     GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Pin = SYNC_PIN;
     HAL_GPIO_Init(SYNC_PORT, &GPIO_InitStruct);

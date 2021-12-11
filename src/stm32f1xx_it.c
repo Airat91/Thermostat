@@ -251,7 +251,25 @@ void EXTI9_5_IRQHandler(void) {
     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);
     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_9);
 
-    static uint8_t sync_tick = 0;
+    static uint32_t front = 0;
+    static uint32_t fail = 0;
+    static uint8_t last_state;
+
+    if((HAL_GPIO_ReadPin(SYNC_PORT, SYNC_PIN) == 0)&&(last_state == 1)){    // fail pulse
+        fail = us_tim_get_value();
+        last_state = 0;
+        dcts_meas[SYNC_1].value = (float)fail - (float)front;
+    }else if((HAL_GPIO_ReadPin(SYNC_PORT, SYNC_PIN) == 1)&&(last_state == 0)){ // front pulse
+        front = us_tim_get_value();
+        last_state = 1;
+        dcts_meas[SYNC_0].value = (float)front - (float)fail;
+        dcts_meas[SYNC_FREQ].value = 500000.0f/(dcts_meas[SYNC_1].value + dcts_meas[SYNC_0].value);
+    }
+    dcts_meas[SYNC_0].valid = 1;
+    dcts_meas[SYNC_1].valid = 1;
+    dcts_meas[SYNC_FREQ].valid = 1;
+
+    /*static uint8_t sync_tick = 0;
 
     if ((dcts_act[0].state.control == FALSE)||(dcts_act[0].state.short_cir == TRUE)){
         HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_SET);
@@ -273,7 +291,7 @@ void EXTI9_5_IRQHandler(void) {
     sync_tick++;
     if(sync_tick == 100){
         sync_tick = 0;
-    }
+    }*/
 }
 
 /* USER CODE END 1 */

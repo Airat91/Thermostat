@@ -1021,6 +1021,9 @@ static int get_param_value(char* string, menu_page_t page){
     case MEAS_CH_7:
     case MEAS_CH_8:
     case MEAS_CH_9:
+    case MEAS_CH_10:
+    case MEAS_CH_11:
+    case MEAS_CH_12:
         sprintf(string, "%.1f", (double)dcts_meas[(uint8_t)(page - MEAS_CH_0)].value);//, dcts_meas[(uint8_t)(page - MEAS_CH_0)].unit_cyr);
         if(dcts_meas[(uint8_t)(page - MEAS_CH_0)].valid == 1){
             result = -1;
