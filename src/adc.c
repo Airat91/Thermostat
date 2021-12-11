@@ -16,7 +16,7 @@
 
 ADC_HandleTypeDef hadc1;
 
-#define ADC_BUF_SIZE 50
+#define ADC_BUF_SIZE 20
 #define ADC_PERIOD 100
 #define ADC_MAX 4095
 #define INPUT_RES 10000.0f
@@ -154,27 +154,27 @@ void adc_gpio_deinit (void){
  */
 void adc_task(void const * argument){
     (void)argument;
-    uint16_t tmpr_reg[ADC_BUF_SIZE];
-    uint16_t tmpr_floor[ADC_BUF_SIZE];
+    uint16_t tmpr_reg = 0;//[ADC_BUF_SIZE];
+    uint16_t tmpr_floor = 0;//[ADC_BUF_SIZE];
     //uint16_t vref[ADC_BUF_SIZE];
-    uint8_t tick = 0;
+    uint8_t tick = 1;
     float v_3_3 = 0.0f;
     adc_init();
     uint32_t last_wake_time = osKernelSysTick();
     while(1){
-        uint32_t tmpr_reg_sum = 0;
-        uint32_t tmpr_floor_sum = 0;
+        //uint32_t tmpr_reg_sum = 0;
+        //uint32_t tmpr_floor_sum = 0;
         //uint32_t vref_sum = 0;
 
 
-        tmpr_reg[tick] = (uint16_t)hadc1.Instance->JDR1;
+        tmpr_reg = (uint16_t)hadc1.Instance->JDR1;
         //vref[tick] = (uint16_t)hadc1.Instance->JDR2;
         if((config.params.sensor_type == SENSOR_NTC_10K)||(config.params.sensor_type == SENSOR_LM35)){
-            tmpr_floor[tick] = (uint16_t)hadc1.Instance->JDR3;
+            tmpr_floor = (uint16_t)hadc1.Instance->JDR3;
         }
         v_3_3 = VREF_INT/(uint16_t)hadc1.Instance->JDR2*ADC_MAX;
 
-        for(uint8_t i = 0; i < ADC_BUF_SIZE; i++){
+        /*for(uint8_t i = 0; i < ADC_BUF_SIZE; i++){
             tmpr_reg_sum += tmpr_reg[i];
             //vref_sum += vref[i];
             if((config.params.sensor_type == SENSOR_NTC_10K)||(config.params.sensor_type == SENSOR_LM35)){
@@ -182,17 +182,17 @@ void adc_task(void const * argument){
             }else{
                 tmpr_floor_sum = 0;
             }
-        }
+        }*/
 
         taskENTER_CRITICAL();
-        dcts_meas[TMPR_REG_ADC].value = (float)tmpr_reg_sum/ADC_BUF_SIZE;
+        dcts_meas[TMPR_REG_ADC].value = (dcts_meas[TMPR_REG_ADC].value * (tick - 1) + (float)tmpr_reg)/tick;
         dcts_meas[TMPR_REG_VLT].value = dcts_meas[TMPR_REG_ADC].value*v_3_3/ADC_MAX;
         dcts_meas[TMPR_REG_GRAD].value = lm35_get_val(dcts_meas[TMPR_REG_VLT].value);
 
         dcts_meas[VREF_VLT].value = v_3_3;
 
         if((config.params.sensor_type == SENSOR_NTC_10K)||(config.params.sensor_type == SENSOR_LM35)){
-            dcts_meas[TMPR_FLOOR_ADC].value = (float)tmpr_floor_sum/ADC_BUF_SIZE;
+            dcts_meas[TMPR_FLOOR_ADC].value = (dcts_meas[TMPR_FLOOR_ADC].value * (tick - 1) + (float)tmpr_floor)/tick;
             dcts_meas[TMPR_FLOOR_VLT].value = dcts_meas[TMPR_FLOOR_ADC].value*v_3_3/ADC_MAX;
             switch (config.params.sensor_type) {
             case SENSOR_NTC_10K:
@@ -226,9 +226,9 @@ void adc_task(void const * argument){
         }
         taskEXIT_CRITICAL();
 
-        tick++;
-        if(tick >= ADC_BUF_SIZE){
-            tick = 0;
+        //tick++;
+        if(tick < ADC_BUF_SIZE){
+            tick++;
         }
         osDelayUntil(&last_wake_time, ADC_PERIOD);
     }
