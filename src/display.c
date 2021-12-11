@@ -225,6 +225,11 @@ static void main_page_print(u8 tick, skin_t skin){
         SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
 
         display_time(0);
+        if(navigation_style == BLOCKED){
+            sprintf(buff,"Заблокировано");
+            SSD1306_GotoXY(align_text_center(buff,Font_7x10), 53);
+            SSD1306_Puts(buff, &Font_7x10, SSD1306_COLOR_WHITE);
+        }
         break;
     case SKIN_TIME:
         if(sensor_state.error == SENSOR_OK){
@@ -1333,8 +1338,14 @@ void navigation_task (void const * argument){
             if(button_click(BUTTON_OK, BUTTON_CLICK_TIME)){
                 menuChange(selectedMenuItem->Child);
             }
-            if(button_clamp(BUTTON_LEFT, BUTTON_PRESS_TIME)&&button_clamp(BUTTON_RIGHT, BUTTON_PRESS_TIME)){
+            if(button_clamp(BUTTON_LEFT, BUTTON_PRESS_TIME)&&button_clamp(BUTTON_RIGHT, BUTTON_PRESS_TIME)&&(selectedMenuItem->Page == MAIN_PAGE)){
                 navigation_style = BLOCKED;
+                while(!HAL_GPIO_ReadPin(pressed_time[BUTTON_LEFT].port, pressed_time[BUTTON_LEFT].pin)||
+                      !HAL_GPIO_ReadPin(pressed_time[BUTTON_RIGHT].port, pressed_time[BUTTON_RIGHT].pin)){
+                    osDelay(1);
+                }
+                pressed_time[BUTTON_LEFT].pressed = 0;
+                pressed_time[BUTTON_RIGHT].pressed = 0;
             }
             break;
         case DIGIT_EDIT:
@@ -1504,6 +1515,12 @@ void navigation_task (void const * argument){
         case BLOCKED:
             if(button_clamp(BUTTON_LEFT, BUTTON_PRESS_TIME)&&button_clamp(BUTTON_RIGHT, BUTTON_PRESS_TIME)){
                 navigation_style = MENU_NAVIGATION;
+                while(!HAL_GPIO_ReadPin(pressed_time[BUTTON_LEFT].port, pressed_time[BUTTON_LEFT].pin)||
+                      !HAL_GPIO_ReadPin(pressed_time[BUTTON_RIGHT].port, pressed_time[BUTTON_RIGHT].pin)){
+                    osDelay(1);
+                }
+                pressed_time[BUTTON_LEFT].pressed = 0;
+                pressed_time[BUTTON_RIGHT].pressed = 0;
             }
             break;
         }
