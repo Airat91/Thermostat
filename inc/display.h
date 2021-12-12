@@ -51,13 +51,6 @@
 #endif
 /*add functions and variable declarations below */
 
-typedef enum{
-   SKIN_FULL = 0,
-   SKIN_TIME,
-   SKIN_TEMP,
-}skin_t;
-extern const char skin_descr[][20];
-
 void display_task( const void *parameters);
 void navigation_task( const void *parameters);
 uint8_t align_text_center(char* string, FontDef_t font);

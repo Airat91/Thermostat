@@ -95,10 +95,23 @@ static const char weekday_descr[7][3] = {
     "Пт",
     "Сб",
 };
-const char skin_descr[3][20]={
+static const char skin_descr[3][20]={
     {"Полный"},
     {"Время"},
     {"Темпер"},
+};
+static const char rule_descr[2][20]={
+    {"Релейная"},
+    {"Фазовая"},
+};
+static const char sensor_descr[3][20]={
+    {"NTC 10k"},
+    {"NTC 100k"},
+    {"DB18B20"},
+};
+static const char phase_ctrl_descr[2][20]={
+    {"ПИД"},
+    {"Ручной"},
 };
 /*enum menu_page_t {
     PAGE_CLOCK,
@@ -119,7 +132,6 @@ static const u8 menu_max_page[] = {4,1};*/
 void display_task( const void *parameters){
     (void) parameters;
     menu_init();
-    //skin_t skin = SKIN_FULL; // add from config
     u8 tick=0;
     u8 tick_2 = 0;
     menu_page_t last_page = selectedMenuItem->Page;

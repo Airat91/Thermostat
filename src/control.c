@@ -108,7 +108,7 @@ semistor_t semistor_state = {
     MAX_REG_TEMP
 };
 
-const char sensor_descr[3][20]={
+/*const char sensor_descr[3][20]={
     {"NTC 10K"},
     {"DS18B20"},
     {"LM35"},
@@ -117,7 +117,7 @@ const char ctrl_rule_descr[2][20]={
     {"PWM"},
     {"Датчик"},
 };
-
+*/
 
 void pid(pid_in_t * inputs,pid_var_t * vars,\
                   pid_out_t * outputs);
@@ -184,9 +184,9 @@ void control_task( const void *parameters){
         if(dcts_act[HEATING].state.control){
             if(dcts_act[SEMISTOR].state.pin_state == 1){ // work permit enable
                 switch(config.params.ctrl_rule){
-                case CTRL_RULE_PWM:
+                case RULE_RELE:
                     break;
-                case CTRL_RULE_TMPR:
+                case RULE_PHASE:
                     break;
                 }
             }else{

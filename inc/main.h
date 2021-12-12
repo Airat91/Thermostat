@@ -142,6 +142,28 @@ void _Error_Handler(char *, int);
      BLOCKED,
  }navigation_t;
 
+ typedef enum{
+    SKIN_FULL = 0,
+    SKIN_TIME,
+    SKIN_TEMP,
+ }skin_t;
+
+ typedef enum{
+     RULE_RELE,
+     RULE_PHASE,
+ }ctrl_rule_t;
+
+ typedef enum{
+     SENSOR_NTC_10K,
+     SENSOR_NTC_100K,
+     SENSOR_DB18B20,
+ }sensor_type_t;
+
+ typedef enum{
+     PHASE_CTRL_PID,
+     PHASE_CTRL_MANUAL,
+ }phase_pwr_ctrl_t;
+
  typedef union{
      struct{
          uint16_t act_enable[ACT_NUM];
@@ -155,7 +177,7 @@ void _Error_Handler(char *, int);
          uint8_t  auto_off;
          uint8_t  mdb_address;
          uint8_t  ctrl_rule;
-
+         uint8_t  phase_pwr_ctrl;
      }params;
      uint16_t word[SAVED_PARAMS_SIZE];
  }saved_to_flash_t;
