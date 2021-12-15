@@ -129,6 +129,7 @@ void _Error_Handler(char *, int);
  typedef enum {
      HEATING = 0,
      SEMISTOR,
+     PWR_PHASE,
  }dcts_act_t;
 
  typedef enum {

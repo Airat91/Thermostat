@@ -198,6 +198,7 @@ void dcts_init (void) {
 
     dcts_act_channel_init(HEATING, "Heating", "Температура пола", "°C", "°C");
     dcts_act_channel_init(SEMISTOR, "Semistor control", "Температура ключа", "°C", "°C");
+    dcts_act_channel_init(PWR_PHASE, "Phase PWR control", "Фазовый рег. мощности", "%", "%");
 
     //rele_channels
 
