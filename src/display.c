@@ -67,7 +67,7 @@ static void max_reg_temp_set(void);
 static void print_header(void);
 static void main_page_print(u8 tick, skin_t skin);
 static void menu_page_print(u8 tick);
-static void value_print(u8 tick);
+static void value_print(u8 tick, u8 position, menuItem* page);
 static void error_page_print(menu_page_t page);
 static void save_page_print (u8 tick);
 static void info_print (void);
@@ -156,6 +156,7 @@ void display_task( const void *parameters){
         }
         refresh_watchdog();
         SSD1306_Fill(SSD1306_COLOR_BLACK);
+        //SSD1306_UpdateScreen();
         if(last_page != selectedMenuItem->Page){
             tick = 0;
             last_page = selectedMenuItem->Page;
@@ -171,11 +172,12 @@ void display_task( const void *parameters){
             save_page_print(tick);
             break;
         default:
-            if(selectedMenuItem->Child_num > 0){
+            menu_page_print(tick);
+            /*if(selectedMenuItem->Child_num > 0){
                 menu_page_print(tick);
             }else if(selectedMenuItem->Child_num == 0){
                 value_print(tick);
-            }
+            }*/
         }
         if(SSD1306.on_off == 1){
             SSD1306_UpdateScreen();
@@ -325,28 +327,41 @@ static void menu_page_print(u8 tick){
     if(temp->Child_num >= 3){
         //print previous
         temp = selectedMenuItem->Previous;
-        sprintf(string, temp->Text);
-        SSD1306_GotoXY(align_text_center(string, Font_7x10),14);
-        SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+        if(temp->Child_num > 0){
+            sprintf(string, temp->Text);
+            SSD1306_GotoXY(align_text_center(string, Font_7x10),14);
+            SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+        }else{
+            value_print(0, 1, temp);
+        }
     }
 
     //print selected
-    sprintf(string, selectedMenuItem->Text);
-    SSD1306_GotoXY(align_text_center(string, Font_7x10),28);
-    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
-    SSD1306_DrawRectangle(1,25,126,14,SSD1306_COLOR_WHITE);
+    if(selectedMenuItem->Child_num > 0){
+        sprintf(string, selectedMenuItem->Text);
+        SSD1306_GotoXY(align_text_center(string, Font_7x10),28);
+        SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+        SSD1306_DrawRectangle(1,25,126,14,SSD1306_COLOR_WHITE);
+        print_enter_right();
+    }else{
+        value_print(tick, 2, selectedMenuItem);
+    }
 
     temp = selectedMenuItem->Parent;
     if(temp->Child_num >= 2){
         //print next
         temp = selectedMenuItem->Next;
-        sprintf(string, temp->Text);
-        SSD1306_GotoXY(align_text_center(string, Font_7x10),42);
-        SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+        if(temp->Child_num > 0){
+            sprintf(string, temp->Text);
+            SSD1306_GotoXY(align_text_center(string, Font_7x10),42);
+            SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+        }else{
+            value_print(0, 3, temp);
+        }
     }
 
     print_back();
-    print_enter_right();
+    /*print_enter_right();*/
 }
 
 static void save_page_print (u8 tick){
@@ -354,10 +369,10 @@ static void save_page_print (u8 tick){
 
     SSD1306_DrawRectangle(5,2,123,26,SSD1306_COLOR_WHITE);
     sprintf(string, "ÑÎÕÐÀÍÅÍÈÅ ÍÎÂÛÕ");
-    SSD1306_GotoXY(align_text_center(string, Font_7x10),4);
+    SSD1306_GotoXY(align_text_center(string, Font_7x10),7);
     SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
     sprintf(string, "ÊÎÝÔÔÈÖÈÅÍÒÎÂ");
-    SSD1306_GotoXY(align_text_center(string, Font_7x10),14);
+    SSD1306_GotoXY(align_text_center(string, Font_7x10),17);
     SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
     SSD1306_GotoXY(55,42);
     SSD1306_Putc(1,&Icon_16x16,SSD1306_COLOR_WHITE);
@@ -374,9 +389,9 @@ static void save_page_print (u8 tick){
     }
 }
 
-static void value_print(u8 tick){
+static void value_print(u8 tick, u8 position, menuItem* page){
     char string[50];
-    print_header();
+    /*print_header();
     int prev = 0;
     int cur = 0;
     int next = 0;
@@ -427,21 +442,56 @@ static void value_print(u8 tick){
             // invalid value
             SSD1306_DrawLine(98,47,127,47,SSD1306_COLOR_WHITE);
         }
+    }*/
+
+    u8 y = 0;
+    switch(position){
+        case 1:
+        y = 14;
+        break;
+    case 2:
+        y = 28;
+        break;
+    case 3:
+        y = 42;
+        break;
+    default:
+        break;
+    }
+    int cur = 0;
+    sprintf(string, page->Text);
+    SSD1306_GotoXY(2,y);
+    SSD1306_print_ticker(string,&Font_7x10,SSD1306_COLOR_WHITE, 11, tick);
+    //SSD1306_UpdateScreen();
+    if(position == 2){
+        SSD1306_InvertRectangle(1,y-3,79,y-14);
+    }
+    cur = get_param_value(string, page->Page);
+    SSD1306_GotoXY(align_text_right(string,Font_7x10),y);
+    SSD1306_Puts(string,&Font_7x10,SSD1306_COLOR_WHITE);
+    //SSD1306_UpdateScreen();
+    if(cur == -2){
+        // invalid value
+        SSD1306_DrawLine(98,y+5,127,y+5,SSD1306_COLOR_WHITE);
+        //SSD1306_UpdateScreen();
     }
 
-    print_back();
+    //print_back();
 
-    if(navigation_style == MENU_NAVIGATION){
-        set_edit_value(selectedMenuItem->Page);
-        if((selectedMenuItem->Child == &EDITED_VAL)&&(cur != -3)){
-            print_change();
-        }
-    }else if(navigation_style == DIGIT_EDIT){
-        print_enter_ok();
-        if(edit_val.digit < 0){
-            SSD1306_InvertRectangle(127-(u8)(edit_val.digit+edit_val.select_shift)*edit_val.select_width,25,edit_val.select_width,14);
-        }else{
-            SSD1306_InvertRectangle(127-(u8)(edit_val.digit+edit_val.select_shift+1)*edit_val.select_width,25,edit_val.select_width,14);
+    if(position == 2){
+        if(navigation_style == MENU_NAVIGATION){
+            set_edit_value(selectedMenuItem->Page);
+            if((selectedMenuItem->Child == &EDITED_VAL)&&(cur != -3)){
+                print_change();
+            }
+        }else if(navigation_style == DIGIT_EDIT){
+            print_enter_ok();
+            if(edit_val.digit < 0){
+                SSD1306_InvertRectangle(127-(u8)(edit_val.digit+edit_val.select_shift)*edit_val.select_width,25,edit_val.select_width,14);
+            }else{
+                SSD1306_InvertRectangle(127-(u8)(edit_val.digit+edit_val.select_shift+1)*edit_val.select_width,25,edit_val.select_width,14);
+            }
+            //SSD1306_UpdateScreen();
         }
     }
 }
@@ -1071,6 +1121,8 @@ static int get_param_value(char* string, menu_page_t page){
     case DATE_YEAR:
         sprintf(string, "%04d", dcts.dcts_rtc.year);
         break;
+    default:
+        sprintf(string, "Îøèáêà");
     }
     return result;
 }
