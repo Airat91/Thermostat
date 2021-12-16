@@ -62,9 +62,9 @@ MAKE_MENU       (main_page,     NULL_ENTRY,     NULL_ENTRY,     NULL_ENTRY,     
       MAKE_MENU (act_hyst_1,    act_cur_1,      act_set_1,      act_ch_1,       EDITED_VAL,     0,          ACT_HYST_1,         "Гистерезис");
       MAKE_MENU (act_cur_1,     act_en_1,       act_hyst_1,     act_ch_1,       NULL_ENTRY,     0,          ACT_CUR_1,          "Текущее");
     MAKE_MENU   (act_ch_2,      sensor_type,    act_ch_1,       act_channels,   act_en_2,       4,          ACT_CH_2,           "Фазовый регулятор");
-      MAKE_MENU (act_en_2,      act_set_2,      act_cur_2,      act_ch_2,       EDITED_VAL,     0,          ACT_EN_2,           "Управление");
-      MAKE_MENU (act_set_2,     act_hyst_2,     act_en_2,       act_ch_2,       EDITED_VAL,     0,          ACT_SET_2,          "Задано");
-      MAKE_MENU (act_hyst_2,    act_cur_2,      act_set_2,      act_ch_2,       EDITED_VAL,     0,          ACT_HYST_2,         "Гистерезис");
+      MAKE_MENU (act_en_2,      act_set_2,      act_cur_2,      act_ch_2,       EDITED_VAL,     0,          ACT_EN_2,           "ПИД");
+      MAKE_MENU (act_set_2,     act_hyst_2,     act_en_2,       act_ch_2,       NULL_ENTRY,     0,          ACT_SET_2,          "ПИД уставка");
+      MAKE_MENU (act_hyst_2,    act_cur_2,      act_set_2,      act_ch_2,       EDITED_VAL,     0,          ACT_HYST_2,         "Ручная уставка");
       MAKE_MENU (act_cur_2,     act_en_2,       act_hyst_2,     act_ch_2,       NULL_ENTRY,     0,          ACT_CUR_2,          "Текущее");
     MAKE_MENU   (sensor_type,   ctrl_rule,      act_ch_2,       act_channels,   EDITED_VAL,     0,          SENSOR_TYPE,        "Датчик температуры");
     MAKE_MENU   (ctrl_rule,     load_res,       sensor_type,    act_channels,   EDITED_VAL,     0,          CTRL_RULE,          "Режим управления");

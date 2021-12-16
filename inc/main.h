@@ -86,7 +86,7 @@ PA10     ------> USART1_RX
 
 #define TIME_YIELD_THRESHOLD 100
 #define MEAS_NUM 13
-#define ACT_NUM 2
+#define ACT_NUM 3
 #define RELE_NUM 2
 
 #define SAVED_PARAMS_SIZE 17

@@ -101,17 +101,17 @@ static const char skin_descr[3][20]={
     {"Темпер"},
 };
 static const char rule_descr[2][20]={
-    {"Релейная"},
-    {"Фазовая"},
+    {"Реле"},
+    {"Фазов"},
 };
 static const char sensor_descr[3][20]={
-    {"NTC 10k"},
-    {"NTC 100k"},
-    {"DB18B20"},
+    {"NTC 10"},
+    {"NTC100"},
+    {"DB1820"},
 };
 static const char phase_ctrl_descr[2][20]={
-    {"ПИД"},
     {"Ручной"},
+    {"ПИД"},
 };
 /*enum menu_page_t {
     PAGE_CLOCK,
@@ -1064,20 +1064,42 @@ static int get_param_value(char* string, menu_page_t page){
     case ACT_EN_1:
         sprintf(string, "%s", off_on_descr[dcts_act[(uint8_t)(page - ACT_EN_0)/5].state.control]);
         break;
+    case ACT_EN_2:
+        sprintf(string, "%s", phase_ctrl_descr[dcts_act[PWR_PHASE].state.control]);
+        break;
 
     case ACT_SET_0:
     case ACT_SET_1:
         sprintf(string, "%.1f%s", (double)dcts_act[(uint8_t)(page - ACT_EN_0)/5].set_value, dcts_act[(uint8_t)(page - ACT_EN_0)/5].unit_cyr);
+        break;
+    case ACT_SET_2:
+        sprintf(string, "%.0f%s", (double)dcts_act[PWR_PHASE].set_value, dcts_act[PWR_PHASE].unit_cyr);
         break;
 
     case ACT_HYST_0:
     case ACT_HYST_1:
         sprintf(string, "%.1f%s", (double)dcts_act[(uint8_t)(page - ACT_HYST_0)/5].hysteresis, dcts_act[(uint8_t)(page - ACT_HYST_0)/5].unit_cyr);
         break;
+    case ACT_HYST_2:
+        sprintf(string, "%.0f%s", (double)dcts_act[PWR_PHASE].hysteresis, dcts_act[PWR_PHASE].unit_cyr);
+        break;
 
     case ACT_CUR_0:
     case ACT_CUR_1:
         sprintf(string, "%.1f%s", (double)dcts_act[(uint8_t)(page - ACT_CUR_0)/5].meas_value, dcts_act[(uint8_t)(page - ACT_CUR_0)/5].unit_cyr);
+        break;
+    case ACT_CUR_2:
+        sprintf(string, "%.0f%s", (double)dcts_act[PWR_PHASE].meas_value, dcts_act[PWR_PHASE].unit_cyr);
+        break;
+
+    case SENSOR_TYPE:
+        sprintf(string, "%s", sensor_descr[config.params.sensor_type]);
+        break;
+    case CTRL_RULE:
+        sprintf(string, "%s", rule_descr[config.params.ctrl_rule]);
+        break;
+    case LOAD_RES:
+        sprintf(string, "%.0f", (double)config.params.load_res);
         break;
 
     case RELE_AUTO_MAN_0:
@@ -1151,6 +1173,17 @@ static void set_edit_value(menu_page_t page){
         edit_val.select_shift = 0;
         edit_val.select_width = Font_7x10.FontWidth*5;
         break;
+    case ACT_EN_2:
+        edit_val.type = VAL_UINT8;
+        edit_val.digit_max = 0;
+        edit_val.digit_min = 0;
+        edit_val.digit = 0;
+        edit_val.val_min.uint8 = 0;
+        edit_val.val_max.uint8 = 1;
+        edit_val.p_val.p_uint8 = &dcts_act[PWR_PHASE].state.control;
+        edit_val.select_shift = 0;
+        edit_val.select_width = Font_7x10.FontWidth*6;
+        break;
     case ACT_SET_0:
         edit_val.type = VAL_FLOAT;
         edit_val.digit_max = 2;
@@ -1173,6 +1206,17 @@ static void set_edit_value(menu_page_t page){
         edit_val.select_shift = 4;
         edit_val.select_width = Font_7x10.FontWidth;
         break;
+    case ACT_SET_2:
+        edit_val.type = VAL_FLOAT;
+        edit_val.digit_max = 2;
+        edit_val.digit_min = 0;
+        edit_val.digit = 0;
+        edit_val.val_min.vfloat = 0.0;
+        edit_val.val_max.vfloat = 100.0;
+        edit_val.p_val.p_float = &dcts_act[PWR_PHASE].set_value;
+        edit_val.select_shift = 1;
+        edit_val.select_width = Font_7x10.FontWidth;
+        break;
     case ACT_HYST_0:
         edit_val.type = VAL_FLOAT;
         edit_val.digit_max = 2;
@@ -1193,6 +1237,50 @@ static void set_edit_value(menu_page_t page){
         edit_val.val_max.vfloat = 100.0;
         edit_val.p_val.p_float = &dcts_act[SEMISTOR].hysteresis;
         edit_val.select_shift = 4;
+        edit_val.select_width = Font_7x10.FontWidth;
+        break;
+    case ACT_HYST_2:
+        edit_val.type = VAL_FLOAT;
+        edit_val.digit_max = 2;
+        edit_val.digit_min = 0;
+        edit_val.digit = 0;
+        edit_val.val_min.vfloat = 0.0;
+        edit_val.val_max.vfloat = 100.0;
+        edit_val.p_val.p_float = &dcts_act[PWR_PHASE].hysteresis;
+        edit_val.select_shift = 1;
+        edit_val.select_width = Font_7x10.FontWidth;
+        break;
+    case SENSOR_TYPE:
+        edit_val.type = VAL_UINT8;
+        edit_val.digit_max = 0;
+        edit_val.digit_min = 0;
+        edit_val.digit = 0;
+        edit_val.val_min.uint8 = 0;
+        edit_val.val_max.uint8 = 2;
+        edit_val.p_val.p_uint8 = &config.params.sensor_type;
+        edit_val.select_shift = 0;
+        edit_val.select_width = Font_7x10.FontWidth*6;
+        break;
+    case CTRL_RULE:
+        edit_val.type = VAL_UINT8;
+        edit_val.digit_max = 0;
+        edit_val.digit_min = 0;
+        edit_val.digit = 0;
+        edit_val.val_min.uint8 = 0;
+        edit_val.val_max.uint8 = 1;
+        edit_val.p_val.p_uint8 = &config.params.ctrl_rule;
+        edit_val.select_shift = 0;
+        edit_val.select_width = Font_7x10.FontWidth*6;
+        break;
+    case LOAD_RES:
+        edit_val.type = VAL_FLOAT;
+        edit_val.digit_max = 3;
+        edit_val.digit_min = 0;
+        edit_val.digit = 0;
+        edit_val.val_min.vfloat = 0.0;
+        edit_val.val_max.vfloat = 9999.0;
+        edit_val.p_val.p_float = &config.params.load_res;
+        edit_val.select_shift = 0;
         edit_val.select_width = Font_7x10.FontWidth;
         break;
     case RELE_AUTO_MAN_0:
