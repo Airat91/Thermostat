@@ -104,7 +104,7 @@ static void RTC_Init(void);
 static int RTC_write_cnt(time_t cnt_value);
 static void MX_USART1_UART_Init(void);
 static void tim2_init(void);
-static void MX_TIM3_Init(void);
+static void tim3_init(void);
 static void save_to_bkp(u8 bkp_num, uint16_t var);
 static void save_float_to_bkp(u8 bkp_num, float var);
 static uint16_t read_bkp(u8 bkp_num);
@@ -129,8 +129,8 @@ int main(void){
     dcts_init();
     restore_params();
     //MX_USART1_UART_Init();
-    //MX_TIM3_Init();
     tim2_init();
+    tim3_init();
     osThreadDef(rtc_task, rtc_task, osPriorityNormal, 0, configMINIMAL_STACK_SIZE*2);
     defaultTaskHandle = osThreadCreate(osThread(rtc_task), NULL);
 
@@ -401,45 +401,6 @@ static int RTC_write_cnt(time_t cnt_value){
     return result;
 }
 
-/** TIM3 init function
- * check implementation
- */
-
-static void MX_TIM3_Init(void){
-    TIM_ClockConfigTypeDef sClockSourceConfig;
-    TIM_MasterConfigTypeDef sMasterConfig;
-    TIM_OC_InitTypeDef pwm_handle;
-    htim3.Instance = TIM3;
-    htim3.Init.Prescaler = 0;
-    htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim3.Init.Period = MAX_PWM_VALUE;
-    htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-    htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-    if (HAL_TIM_Base_Init(&htim3) != HAL_OK)  {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-    sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-    if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)  {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-    if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)  {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-    sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-    sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-    if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)  {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-    pwm_handle.OCMode = TIM_OCMODE_PWM1;
-    pwm_handle.Pulse = 16000;
-    pwm_handle.OCPolarity = TIM_OCPOLARITY_HIGH;
-    pwm_handle.OCFastMode = TIM_OCFAST_DISABLE;
-    if (HAL_TIM_PWM_ConfigChannel(&htim3, &pwm_handle, TIM_CHANNEL_1) != HAL_OK)  {
-        _Error_Handler(__FILE__, __LINE__);
-    }
-    HAL_TIM_MspPostInit(&htim3);
-}
-
 /** Configure pins as 
         * Analog
         * Input
@@ -570,6 +531,42 @@ static void tim2_init(void){
     if (HAL_TIM_Base_Start_IT(&htim2) != HAL_OK){
         _Error_Handler(__FILE__, __LINE__);
     }
+}
+
+/**
+ * @brief Init Phase control interrupt timer
+ * @ingroup MAIN
+ */
+
+static void tim3_init(void){
+    TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+    TIM_MasterConfigTypeDef sMasterConfig = {0};
+    __HAL_RCC_TIM3_CLK_ENABLE();
+    htim3.Instance = TIM3;
+    htim3.Init.Prescaler = 71;
+    htim3.Init.CounterMode = TIM_COUNTERMODE_DOWN;
+    htim3.Init.Period = 0xFFFF;
+    htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+    if (HAL_TIM_Base_Init(&htim3) != HAL_OK)  {
+        _Error_Handler(__FILE__, __LINE__);
+    }
+    sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+    if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)  {
+        _Error_Handler(__FILE__, __LINE__);
+    }
+    /*if (HAL_TIM_OnePulse_Init(&htim3, TIM_OPMODE_SINGLE) != HAL_OK){
+        _Error_Handler(__FILE__, __LINE__);
+    }*/
+    sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+    sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+    if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)  {
+        _Error_Handler(__FILE__, __LINE__);
+    }
+    HAL_NVIC_EnableIRQ(TIM3_IRQn);
+    /*if (HAL_TIM_Base_Start_IT(&htim3) != HAL_OK){
+        _Error_Handler(__FILE__, __LINE__);
+    }*/
 }
 /**
  * @brief Get value from global us timer

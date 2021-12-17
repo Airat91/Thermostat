@@ -77,28 +77,38 @@ typedef struct{
     float dispersion;
     float correction;
 }sensor_tt;
-/*typedef enum {
-    SENSOR_NTC_10K,
-    SENSOR_DS18B20,
-    SENSOR_LM35,
-}sensor_t;
-typedef enum {
-    CTRL_RULE_PWM,
-    CTRL_RULE_TMPR,
-}ctrl_rule_t;*/
 typedef enum {
     TMPR_HEATING,
     TMPR_COOLING,
 }tmpr_proc_t;
-/*extern const char sensor_descr[][20];
-extern const char ctrl_rule_descr[][20];*/
 extern sensor_tt sensor_state;
 typedef struct{
     u8 overheat;
     u16 overheat_cnt;
     float max_tmpr;
 }semistor_t;
+typedef enum{
+    PHASE_DISABLE = 0,
+    PHASE_DOWNCOUNT,
+    PHASE_REG_ON_DELAY,
+    PHASE_REG_ON_SELF,
+}phase_tim_state_t;
+typedef struct{
+    u16 timeout;
+    u8 state;
+    u16 on_delay;
+}phase_tim_t;
+typedef enum{
+    OFF,
+    ON,
+}od_pin_state_t;
+
+extern phase_tim_t phase_tim;
 extern semistor_t semistor_state;
+
+
+void od_pin_ctrl(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, u8 ctrl);
+u16 calc_phase_delay(float act_time, float zero_time, float percentage);
 /*add functions and variable declarations before */
 #ifdef __cplusplus
 }

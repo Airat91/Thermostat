@@ -46,9 +46,10 @@
 /* External variables --------------------------------------------------------*/
 extern PCD_HandleTypeDef hpcd_USB_FS;
 extern RTC_HandleTypeDef hrtc;
+extern TIM_HandleTypeDef htim1;
+extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 extern UART_HandleTypeDef huart1;
-extern TIM_HandleTypeDef htim1;
 
 /******************************************************************************/
 /*            Cortex-M3 Processor Interruption and Exception Handlers         */ 
@@ -216,13 +217,31 @@ void TIM1_UP_IRQHandler(void){
 * @brief This function handles TIM3 global interrupt.
 */
 void TIM3_IRQHandler(void){
-  HAL_TIM_IRQHandler(&htim3);
+    HAL_TIM_IRQHandler(&htim3);
+    HAL_TIM_Base_Stop_IT(&htim3);
+    switch(phase_tim.state){
+    case PHASE_DOWNCOUNT:
+        if(dcts_act[SEMISTOR].state.pin_state == 1){
+            od_pin_ctrl(REG_ON_PORT, REG_ON_PIN, ON);
+        }
+        htim3.Instance->CNT = phase_tim.on_delay;
+        HAL_TIM_Base_Start_IT(&htim3);
+        phase_tim.state = PHASE_REG_ON_DELAY;
+        break;
+    case PHASE_REG_ON_DELAY:
+        if(dcts_act[SEMISTOR].state.pin_state == 1){
+            od_pin_ctrl(REG_ON_PORT, REG_ON_PIN, OFF);
+        }
+        phase_tim.state = PHASE_REG_ON_SELF;
+        break;
+    default:
+        break;
+    }
 }
 
 /**
 * @brief This function handles TIM2 global interrupt.
 */
-extern TIM_HandleTypeDef htim2;
 void TIM2_IRQHandler(void){
   HAL_TIM_IRQHandler(&htim2);
   us_cnt_H += 0x10000;
@@ -259,11 +278,20 @@ void EXTI9_5_IRQHandler(void) {
         fail = us_tim_get_value();
         last_state = 0;
         dcts_meas[SYNC_1].value = (float)fail - (float)front;
+
+        //phase_tim.timeout = (u16)(dcts_meas[SYNC_0].value * (1.0f - (float)dcts_act[PWR_PHASE].hysteresis/100.0f));
+        phase_tim.timeout = calc_phase_delay(dcts_meas[SYNC_0].value, dcts_meas[SYNC_1].value, dcts_act[PWR_PHASE].hysteresis);
+        if(config.params.ctrl_rule == RULE_PHASE){
+            phase_tim.state = PHASE_DOWNCOUNT;
+            htim3.Instance->CNT = phase_tim.timeout;
+            HAL_TIM_Base_Start_IT(&htim3);
+        }
     }else if((HAL_GPIO_ReadPin(SYNC_PORT, SYNC_PIN) == 1)&&(last_state == 0)){ // front pulse
         front = us_tim_get_value();
         last_state = 1;
         dcts_meas[SYNC_0].value = (float)front - (float)fail;
         dcts_meas[SYNC_FREQ].value = 500000.0f/(dcts_meas[SYNC_1].value + dcts_meas[SYNC_0].value);
+        phase_tim.state = PHASE_DISABLE;
     }
     dcts_meas[SYNC_0].valid = 1;
     dcts_meas[SYNC_1].valid = 1;

@@ -107,17 +107,12 @@ semistor_t semistor_state = {
     0,
     MAX_REG_TEMP
 };
+phase_tim_t phase_tim = {
+    .timeout = 0,
+    .state = PHASE_DISABLE,
+    .on_delay = 20,
+};
 
-/*const char sensor_descr[3][20]={
-    {"NTC 10K"},
-    {"DS18B20"},
-    {"LM35"},
-};
-const char ctrl_rule_descr[2][20]={
-    {"PWM"},
-    {"Датчик"},
-};
-*/
 
 void pid(pid_in_t * inputs,pid_var_t * vars,\
                   pid_out_t * outputs);
@@ -131,11 +126,10 @@ extern RTC_HandleTypeDef hrtc;
 extern ADC_HandleTypeDef hadc1;
 void control_task( const void *parameters){
     (void) parameters;
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    /*GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;*/
     static tmpr_proc_t sem_temp = TMPR_HEATING;
     static tmpr_proc_t floor_temp = TMPR_HEATING;
-
     u32 tick=0;
     /*pid_in_t in;
     pid_var_t var;
@@ -164,6 +158,7 @@ void control_task( const void *parameters){
                 dcts_act[SEMISTOR].meas_value = dcts_meas[TMPR_REG_GRAD].value;
                 switch(sem_temp){
                 case TMPR_HEATING:
+                    dcts_act[SEMISTOR].state.pin_state = 1; // work permit enable
                     if(dcts_act[SEMISTOR].meas_value > dcts_act[SEMISTOR].set_value + 0.5f*dcts_act[SEMISTOR].hysteresis){
                         dcts_act[SEMISTOR].state.pin_state = 0; // work permit disable
                         sem_temp = TMPR_COOLING;
@@ -212,21 +207,23 @@ void control_task( const void *parameters){
         if(dcts_rele[HEATER].state.control == 1){
             //heater on
             if(dcts_rele[HEATER].state.status == 0){
-                GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+                /*GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
                 GPIO_InitStruct.Pull = GPIO_PULLUP;
                 GPIO_InitStruct.Pin = REG_ON_PIN;
                 HAL_GPIO_Init(REG_ON_PORT, &GPIO_InitStruct);
 
-                HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_RESET);
+                HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_RESET);*/
+                od_pin_ctrl(REG_ON_PORT, REG_ON_PIN, ON);
                 dcts_rele[HEATER].state.status = 1;
             }
         }else{
             //heater off
             if(dcts_rele[HEATER].state.status == 1){
-                GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+                /*GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
                 GPIO_InitStruct.Pull = GPIO_NOPULL;
                 GPIO_InitStruct.Pin = REG_ON_PIN;
-                HAL_GPIO_Init (REG_ON_PORT, &GPIO_InitStruct);
+                HAL_GPIO_Init (REG_ON_PORT, &GPIO_InitStruct);*/
+                od_pin_ctrl(REG_ON_PORT, REG_ON_PIN, OFF);
                 dcts_rele[HEATER].state.status = 0;
             }
         }
@@ -235,13 +232,15 @@ void control_task( const void *parameters){
         if(dcts_rele[LED].state.control == 1){
             //heater on
             if(dcts_rele[LED].state.status == 0){
-                HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_RESET);
+                //HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_RESET);
+                od_pin_ctrl(LED_PORT, LED_PIN, ON);
                 dcts_rele[LED].state.status = 1;
             }
         }else{
             //heater off
             if(dcts_rele[LED].state.status == 1){
-                HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);
+                //HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);
+                od_pin_ctrl(LED_PORT, LED_PIN, OFF);
                 dcts_rele[LED].state.status = 0;
             }
         }
@@ -398,6 +397,37 @@ static float ntc_tmpr_calc(float volt){
 #define C   -70.672f
 #define D   83.718f
     result = A*volt*volt*volt + B*volt*volt + C*volt + D;
+    return result;
+}
+
+void od_pin_ctrl(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, u8 ctrl){
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Pin = GPIO_Pin;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    switch(ctrl){
+    case 0:
+        GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        HAL_GPIO_Init(GPIOx, &GPIO_InitStruct);
+        break;
+    case 1:
+        GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+        GPIO_InitStruct.Pull = GPIO_PULLUP;
+        HAL_GPIO_Init(GPIOx, &GPIO_InitStruct);
+        HAL_GPIO_WritePin(GPIOx,GPIO_Pin, GPIO_PIN_RESET);
+        break;
+    }
+}
+
+u16 calc_phase_delay(float act_time, float zero_time, float percentage){
+    u16 result = 0;
+    float temp = (act_time + zero_time)*(100.0f - percentage)/100.0f;
+    if(temp > act_time + zero_time/4.0f){
+        temp = act_time + zero_time/4.0f;
+    }
+    temp -= zero_time/4.0f;
+    result = (u16)temp;
+
     return result;
 }
 
