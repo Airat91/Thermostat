@@ -461,6 +461,7 @@ static void MX_GPIO_Init(void){
     GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
     GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Pin = SYNC_PIN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(SYNC_PORT, &GPIO_InitStruct);
 
     HAL_NVIC_SetPriority(EXTI9_5_IRQn, 1, 1);
@@ -472,6 +473,9 @@ static void MX_GPIO_Init(void){
     GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Pin = REG_ON_PIN;
     HAL_GPIO_Init(REG_ON_PORT, &GPIO_InitStruct);
+
+    HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_SET);
 
     /* LED pin */
     HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);

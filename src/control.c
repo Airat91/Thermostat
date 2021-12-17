@@ -132,6 +132,7 @@ extern ADC_HandleTypeDef hadc1;
 void control_task( const void *parameters){
     (void) parameters;
     GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     static tmpr_proc_t sem_temp = TMPR_HEATING;
     static tmpr_proc_t floor_temp = TMPR_HEATING;
 
@@ -212,9 +213,10 @@ void control_task( const void *parameters){
             //heater on
             if(dcts_rele[HEATER].state.status == 0){
                 GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
-                GPIO_InitStruct.Pull = GPIO_NOPULL;
+                GPIO_InitStruct.Pull = GPIO_PULLUP;
                 GPIO_InitStruct.Pin = REG_ON_PIN;
-                HAL_GPIO_Init (REG_ON_PORT, &GPIO_InitStruct);
+                HAL_GPIO_Init(REG_ON_PORT, &GPIO_InitStruct);
+
                 HAL_GPIO_WritePin(REG_ON_PORT, REG_ON_PIN, GPIO_PIN_RESET);
                 dcts_rele[HEATER].state.status = 1;
             }
