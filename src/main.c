@@ -189,10 +189,11 @@ void dcts_init (void) {
     dcts_meas_channel_init(TMPR_REG_VLT, "Tmpr sem Vlt", "Температура семистора напр.", "V", "В");
     dcts_meas_channel_init(VREF_VLT, "Vref V", "Опорное напр. В", "V", "В");
     dcts_meas_channel_init(VBAT_VLT, "RTC battery V", "Батарейка В", "V", "В");
-    dcts_meas_channel_init(VBAT_VLT, "Consumption", "Потребление", "W", "Вт");
-    dcts_meas_channel_init(VBAT_VLT, "Synchro 0", "Синхроимп 0", "us", "мкс");
-    dcts_meas_channel_init(VBAT_VLT, "Synchro 1", "Синхроимп 1", "us", "мкс");
-    dcts_meas_channel_init(VBAT_VLT, "AC frequency", "Частота сети", "Hz", "Гц");
+    dcts_meas_channel_init(CONSUMPTION, "Consumption", "Потребление", "W", "Вт");
+    dcts_meas_channel_init(SYNC_0, "Synchro 0", "Синхроимп 0", "us", "мкс");
+    dcts_meas_channel_init(SYNC_1, "Synchro 1", "Синхроимп 1", "us", "мкс");
+    dcts_meas_channel_init(SYNC_FREQ, "AC frequency", "Частота сети", "Hz", "Гц");
+    dcts_meas_channel_init(SYNC_ON_DELAY, "ON delay", "Задержка включения", "us", "мкс");
 
     //act_channels
 

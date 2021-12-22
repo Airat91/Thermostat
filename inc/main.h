@@ -124,6 +124,7 @@ void _Error_Handler(char *, int);
      SYNC_0,
      SYNC_1,
      SYNC_FREQ,
+     SYNC_ON_DELAY,
  }dcts_meas_t;
 
  typedef enum {

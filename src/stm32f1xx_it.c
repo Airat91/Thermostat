@@ -279,12 +279,13 @@ void EXTI9_5_IRQHandler(void) {
         last_state = 0;
         dcts_meas[SYNC_1].value = (float)fail - (float)front;
 
-        //phase_tim.timeout = (u16)(dcts_meas[SYNC_0].value * (1.0f - (float)dcts_act[PWR_PHASE].hysteresis/100.0f));
         phase_tim.timeout = calc_phase_delay(dcts_meas[SYNC_0].value, dcts_meas[SYNC_1].value, dcts_act[PWR_PHASE].hysteresis);
         if(config.params.ctrl_rule == RULE_PHASE){
             phase_tim.state = PHASE_DOWNCOUNT;
             htim3.Instance->CNT = phase_tim.timeout;
             HAL_TIM_Base_Start_IT(&htim3);
+            dcts_meas[SYNC_ON_DELAY].value = (u16)phase_tim.timeout;
+            dcts_meas[SYNC_ON_DELAY].valid = 1;
         }
     }else if((HAL_GPIO_ReadPin(SYNC_PORT, SYNC_PIN) == 1)&&(last_state == 0)){ // front pulse
         front = us_tim_get_value();

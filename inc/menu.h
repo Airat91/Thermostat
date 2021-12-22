@@ -41,6 +41,7 @@ typedef enum {
     MEAS_CH_10,
     MEAS_CH_11,
     MEAS_CH_12,
+    MEAS_CH_13,
     ACT_CHANNELS,
     ACT_CH_0,
     ACT_EN_0,
