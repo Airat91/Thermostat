@@ -51,6 +51,7 @@
 #include "dcts.h"
 #include "pin_map.h"
 #include "buttons.h"
+#include "math.h"
 extern IWDG_HandleTypeDef hiwdg;
 uint8_t PWM_duty = 0;
 /* fb pid */
@@ -419,13 +420,124 @@ void od_pin_ctrl(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, u8 ctrl){
     }
 }
 
-u16 calc_phase_delay(float act_time, float zero_time, float percentage){
+const float phase_pwr_coef[101] = {
+    1.00000f,
+    0.93623f,
+    0.90967f,
+    0.88918f,
+    0.87181f,
+    0.85643f,
+    0.84246f,
+    0.82954f,
+    0.81745f,
+    0.80603f,
+    0.79517f,
+    0.78478f,
+    0.77480f,
+    0.76517f,
+    0.75586f,
+    0.74682f,
+    0.73802f,
+    0.72944f,
+    0.72107f,
+    0.71287f,
+    0.70483f,
+    0.69695f,
+    0.68920f,
+    0.68158f,
+    0.67407f,
+    0.66667f,
+    0.65936f,
+    0.65215f,
+    0.64502f,
+    0.63797f,
+    0.63099f,
+    0.62408f,
+    0.61722f,
+    0.61043f,
+    0.60368f,
+    0.59699f,
+    0.59033f,
+    0.58372f,
+    0.57715f,
+    0.57061f,
+    0.56409f,
+    0.55761f,
+    0.55115f,
+    0.54471f,
+    0.53829f,
+    0.53188f,
+    0.52549f,
+    0.51911f,
+    0.51274f,
+    0.50637f,
+    0.50000f,
+    0.49363f,
+    0.48726f,
+    0.48089f,
+    0.47451f,
+    0.46812f,
+    0.46171f,
+    0.45529f,
+    0.44885f,
+    0.44239f,
+    0.43591f,
+    0.42939f,
+    0.42285f,
+    0.41628f,
+    0.40967f,
+    0.40301f,
+    0.39632f,
+    0.38957f,
+    0.38278f,
+    0.37592f,
+    0.36901f,
+    0.36203f,
+    0.35498f,
+    0.34785f,
+    0.34064f,
+    0.33333f,
+    0.32593f,
+    0.31842f,
+    0.31080f,
+    0.30305f,
+    0.29517f,
+    0.28713f,
+    0.27893f,
+    0.27056f,
+    0.26198f,
+    0.25318f,
+    0.24414f,
+    0.23483f,
+    0.22520f,
+    0.21522f,
+    0.20483f,
+    0.19397f,
+    0.18255f,
+    0.17046f,
+    0.15754f,
+    0.14357f,
+    0.12819f,
+    0.11082f,
+    0.09033f,
+    0.06377f,
+    0.00000f
+};
+
+u16 calc_phase_delay(float act_time, float zero_time, u16 percentage){
     u16 result = 0;
-    float temp = (act_time + zero_time)*(100.0f - percentage)/100.0f;
+    /*float temp = (act_time + zero_time)*(100.0f - percentage)/100.0f;
     if(temp > act_time + zero_time/4.0f){
         temp = act_time + zero_time/4.0f;
     }
     temp -= zero_time/4.0f;
+    result = (u16)temp;*/
+
+    float temp = phase_pwr_coef[percentage]*(act_time + zero_time);
+    temp -= zero_time/2.0f;
+    if(temp > act_time + zero_time/8.0f){
+        temp = act_time + zero_time/8.0f;
+    }
     result = (u16)temp;
 
     return result;

@@ -279,8 +279,8 @@ void EXTI9_5_IRQHandler(void) {
         last_state = 0;
         dcts_meas[SYNC_1].value = (float)fail - (float)front;
 
-        phase_tim.timeout = calc_phase_delay(dcts_meas[SYNC_0].value, dcts_meas[SYNC_1].value, dcts_act[PWR_PHASE].hysteresis);
         if(config.params.ctrl_rule == RULE_PHASE){
+            phase_tim.timeout = calc_phase_delay(dcts_meas[SYNC_0].value, dcts_meas[SYNC_1].value, (u16)dcts_act[PWR_PHASE].hysteresis);
             phase_tim.state = PHASE_DOWNCOUNT;
             htim3.Instance->CNT = phase_tim.timeout;
             HAL_TIM_Base_Start_IT(&htim3);

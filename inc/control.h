@@ -108,7 +108,7 @@ extern semistor_t semistor_state;
 
 
 void od_pin_ctrl(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, u8 ctrl);
-u16 calc_phase_delay(float act_time, float zero_time, float percentage);
+u16 calc_phase_delay(float act_time, float zero_time, u16 percentage);
 /*add functions and variable declarations before */
 #ifdef __cplusplus
 }
