@@ -86,14 +86,15 @@ static const char manual_auto_descr[2][10] = {
     "Ручной",
     "Авто",
 };
-static const char weekday_descr[7][3] = {
-    "Вс",
+static const char weekday_descr[8][3] = {
+    "Ош",
     "Пн",
     "Вт",
     "Ср",
     "Чт",
     "Пт",
     "Сб",
+    "Вс",
 };
 static const char skin_descr[3][20]={
     {"Полный"},

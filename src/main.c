@@ -474,9 +474,13 @@ void rtc_task(void const * argument){
             dcts.dcts_rtc.second    = (u8)system_time.tm_sec;
 
             dcts.dcts_rtc.day       = (u8)system_time.tm_mday;
-            dcts.dcts_rtc.month     = (u8)system_time.tm_mon;
+            dcts.dcts_rtc.month     = (u8)system_time.tm_mon + 1;
             dcts.dcts_rtc.year      = (u8)system_time.tm_year + 1900;
-            dcts.dcts_rtc.weekday   = (u8)system_time.tm_wday;
+            if(system_time.tm_wday == 0){
+                dcts.dcts_rtc.weekday = 7;
+            }else{
+                dcts.dcts_rtc.weekday   = (u8)system_time.tm_wday;
+            }
             taskEXIT_CRITICAL();
             break;
         case RTC_STATE_SET:     //set new values from dcts_rtc
@@ -485,7 +489,7 @@ void rtc_task(void const * argument){
             system_time.tm_sec  = dcts.dcts_rtc.second;
 
             system_time.tm_mday = dcts.dcts_rtc.day;
-            system_time.tm_mon  = dcts.dcts_rtc.month;
+            system_time.tm_mon  = dcts.dcts_rtc.month - 1;
             system_time.tm_year = dcts.dcts_rtc.year - 1900;
 
             unix_time = mktime(&system_time);
